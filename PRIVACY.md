@@ -1,8 +1,8 @@
-# Privacy Policy — Tab Defaults for X
+# Privacy Policy — Photos First for X
 
 _Last updated: 2026-08-17_
 
-**Tab Defaults for X** does not collect, store, transmit, or share any personal data.
+**Photos First for X** does not collect, store, transmit, or share any personal data.
 
 - The extension runs only on `https://x.com/*` and `https://twitter.com/*`.
 - It changes which tab view is shown on X profile pages by adjusting the page URL inside your browser (e.g. `/username` → `/username/all`, `/username/media` → `/username/media?filter=photo`). Nothing is sent anywhere.
@@ -13,11 +13,11 @@ If you have questions, open an issue at https://github.com/stland6338/x-profile-
 
 ---
 
-# プライバシーポリシー — Tab Defaults for X
+# プライバシーポリシー — Photos First for X
 
 _最終更新: 2026-08-17_
 
-**Tab Defaults for X** は、個人情報を一切収集・保存・送信・共有しません。
+**Photos First for X** は、個人情報を一切収集・保存・送信・共有しません。
 
 - 動作するのは `https://x.com/*` と `https://twitter.com/*` のみです。
 - X のプロフィールページで表示するタブを、ブラウザ内で URL を書き換えることで切り替えます（例: `/username` → `/username/all`、`/username/media` → `/username/media?filter=photo`）。外部への送信はありません。

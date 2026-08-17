@@ -181,7 +181,7 @@ try {
     const opt = await newTab(`chrome-extension://${extId}/options.html`);
     await sleep(1500);
     const o = await opt.eval(`(() => ({ title: document.title, checked: [...document.querySelectorAll('input:checked')].map(i => i.name + '=' + (i.value || i.checked)), h2: [...document.querySelectorAll('h2')].map(h => h.textContent) }))()`);
-    record('options page renders (ja, defaults checked)', o.checked.length === 3 && o.h2.length === 2, JSON.stringify(o));
+    record('options page renders (ja, defaults checked)', o.checked.length === 4 && o.h2.length === 3, JSON.stringify(o));
     await opt.shot('e2e-3-options.png');
     // エラー検出器そのものの自己診断: 拡張ページで意図的にエラーを出して拾えることを確認
     await opt.eval(`(() => { console.error('[x-tab-defaults] selfcheck'); return true; })()`);
@@ -202,6 +202,32 @@ try {
     s = await waitForTabs(cdp);
     record("setting postsTab='' leaves /user untouched", s.loc === '/nijisanji_app', JSON.stringify(s));
     await cdp.shot('e2e-4-unchanged.png');
+    cdp.close();
+
+    // 6) 記憶モード: 手動で「すべて」を選ぶ（/user → /user/all の pushState）→ storage の postsTab が 'all' になり、
+    //    別プロフィールを開くと /all に飛ぶ。次に「ポスト」を選ぶ（/all → /user）→ '' に戻る
+    const opt2 = await newTab(`chrome-extension://${extId}/options.html`);
+    await sleep(800);
+    await opt2.eval(`new Promise(r => chrome.storage.sync.set({ mode: 'remember', postsTab: '' }, r))`);
+    opt2.close();
+    cdp = await newTab('about:blank');
+    await navigate(cdp, 'https://x.com/nijisanji_app');
+    await waitForTabs(cdp);
+    await spaGo(cdp, '/nijisanji_app/all');            // ドロップダウンで「すべて」を選んだ相当
+    await sleep(800);
+    const opt3 = await newTab(`chrome-extension://${extId}/options.html`);
+    await sleep(500);
+    let st = await opt3.eval(`new Promise(r => chrome.storage.sync.get(null, r))`);
+    record("remember mode: picking All stores postsTab='all'", st.postsTab === 'all', JSON.stringify(st));
+    await navigate(cdp, 'https://x.com/H_KAGAMI2434');  // 別プロフィール → 記憶した 'all' で開く
+    s = await waitForTabs(cdp);
+    record('remember mode: next profile opens /all', s.loc === '/H_KAGAMI2434/all', JSON.stringify(s));
+    await spaGo(cdp, '/H_KAGAMI2434');                  // 「ポスト」を選んだ相当 → '' を記憶
+    await sleep(800);
+    st = await opt3.eval(`new Promise(r => chrome.storage.sync.get(null, r))`);
+    record("remember mode: picking Posts stores postsTab=''", st.postsTab === '', JSON.stringify(st));
+    await opt3.eval(`new Promise(r => chrome.storage.sync.set({ mode: 'fixed', postsTab: 'all' }, r))`);
+    opt3.close();
     cdp.close();
   }
 } catch (e) {

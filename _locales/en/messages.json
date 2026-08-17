@@ -1,15 +1,27 @@
 {
   "extName": {
-    "message": "Tab Defaults for X"
+    "message": "Photos First for X"
   },
   "extShortName": {
-    "message": "Tab Defaults for X"
+    "message": "Photos First for X"
   },
   "extDesc": {
-    "message": "Open X profiles with “All” instead of “Posts” and “Photos” instead of “Videos” — automatically, without reloading."
+    "message": "Fixes X's new profile tabs: open Media on Photos (not Videos) and Posts on All — automatically, no reload."
   },
   "optionsTitle": {
-    "message": "Tab Defaults for X"
+    "message": "Photos First for X"
+  },
+  "modeHeading": {
+    "message": "Mode"
+  },
+  "modeFixed": {
+    "message": "Fixed — always open with the settings below"
+  },
+  "modeRemember": {
+    "message": "Remember — reuse whatever you last picked from the dropdown"
+  },
+  "modeHint": {
+    "message": "In Remember mode the settings below update automatically whenever you pick something from the dropdown."
   },
   "postsTabHeading": {
     "message": "Posts tab (Posts ▾)"

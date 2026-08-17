@@ -3,15 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-i18n="optionsTitle">Tab Defaults for X</title>
+  <title data-i18n="optionsTitle">Photos First for X</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <main>
     <header>
       <img src="icons/icon48.png" alt="" width="32" height="32">
-      <h1 data-i18n="optionsTitle">Tab Defaults for X</h1>
+      <h1 data-i18n="optionsTitle">Photos First for X</h1>
     </header>
+
+    <section>
+      <h2 data-i18n="modeHeading">Mode</h2>
+      <label><input type="radio" name="mode" value="fixed"> <span data-i18n="modeFixed">Fixed — always open with the settings below</span></label>
+      <label><input type="radio" name="mode" value="remember"> <span data-i18n="modeRemember">Remember — reuse whatever you last picked from the dropdown</span></label>
+      <p class="hint" data-i18n="modeHint">In Remember mode the settings below update automatically whenever you pick something from the dropdown.</p>
+    </section>
 
     <section>
       <h2 data-i18n="postsTabHeading">Posts tab (Posts ▾)</h2>

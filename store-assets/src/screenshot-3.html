@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <link rel="stylesheet" href="common.css">
 <style>
+  .wrap { padding-top: 40px; }
+  h1 { margin-bottom: 4px; }
+  .sub { margin-bottom: 16px; }
   .stage { justify-content: center; }
-  .frame { width: 520px; height: 490px; background: #000; border: 1px solid #2f3336; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+  .frame { width: 520px; height: 545px; background: #000; border: 1px solid #2f3336; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
   .frame iframe { width: 100%; height: 100%; border: 0; background: #000; }
   .bullets { flex: 0 0 500px; font-size: 20px; line-height: 1.7; color: #cfe3ee; }
   .bullets li { margin-bottom: 10px; }
@@ -14,13 +17,14 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><img src="../../icons/icon128.png" alt=""><span class="name">Tab Defaults for X</span></div>
-  <h1>好みに合わせて<em>切り替え</em>もできる</h1>
-  <p class="sub">Turn each rule on or off in the options. Changes apply immediately.</p>
+  <div class="brand"><img src="../../icons/icon128.png" alt=""><span class="name">Photos First for X</span></div>
+  <h1>固定でも、<em>最後に選んだもの</em>でも</h1>
+  <p class="sub">Fixed defaults, or remember what you last picked. Changes apply immediately.</p>
 
   <div class="stage">
     <div class="frame"><iframe src="../build/options-preview.html" title="options"></iframe></div>
     <ul class="bullets">
+      <li>動作モード：固定 / 最後に選んだものを記憶</li>
       <li>ポスト▼：すべて / 変更しない</li>
       <li>メディア▼：画像 / 変更しない</li>
       <li>手動でドロップダウンから選んだときは、そのまま</li>

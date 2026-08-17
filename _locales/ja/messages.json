@@ -1,15 +1,27 @@
 {
   "extName": {
-    "message": "Tab Defaults for X — 画像・すべてを既定に"
+    "message": "Xのメディア欄を画像に戻す（ポストは「すべて」に）"
   },
   "extShortName": {
-    "message": "Tab Defaults for X"
+    "message": "Photos First for X"
   },
   "extDesc": {
-    "message": "X のプロフィールを開いたとき、ポスト▼を「すべて」、メディア▼を「画像」に自動で切り替えます。リロードなし・設定不要。"
+    "message": "X のメディア欄が「動画」で開くのを「画像」に、ポストを「すべて」に自動で戻します。リロードなし・設定不要。"
   },
   "optionsTitle": {
-    "message": "Tab Defaults for X"
+    "message": "Photos First for X"
+  },
+  "modeHeading": {
+    "message": "動作モード"
+  },
+  "modeFixed": {
+    "message": "固定 — いつも下の設定で開く"
+  },
+  "modeRemember": {
+    "message": "記憶 — ドロップダウンで最後に選んだものを次回以降も使う"
+  },
+  "modeHint": {
+    "message": "記憶モードでは、選び直すたびに下の設定が自動で更新されます。"
   },
   "postsTabHeading": {
     "message": "ポストタブ（ポスト ▾）"

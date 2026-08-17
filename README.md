@@ -1,10 +1,11 @@
-# Tab Defaults for X
+# Photos First for X — Xのメディア欄を画像に戻す
 
-X (x.com) のプロフィールを開いたとき、タブのデフォルトを自動で切り替える Chrome 拡張／ユーザースクリプト。
+X (x.com) のメディア欄が「動画」で開くのを「画像」に、ポストを「すべて」に自動で戻す Chrome 拡張／ユーザースクリプト。
 
-Open X profiles with **“All”** instead of “Posts” and **“Photos”** instead of “Videos” — automatically, without reloading.
+Fixes X's new profile tabs: open Media on **Photos** (not Videos) and Posts on **All** — automatically, without reloading.
 
 ![screenshot](store-assets/out/screenshot-1-1280x800.png)
+
 
 | タブ | X のデフォルト | この拡張 | URL |
 |---|---|---|---|
@@ -13,6 +14,7 @@ Open X profiles with **“All”** instead of “Posts” and **“Photos”** i
 
 - ページリロードなし（`history.replaceState` + `popstate` で X のルーターに再描画させる）
 - ドロップダウンから手動で「ポスト」「動画」を選び直した場合はそのまま（設定で無効化可）
+- 「記憶」モードにすると、最後に選んだものを次回以降のデフォルトにする（X が本来やるべき挙動）
 - 対象は `https://x.com/*` と `https://twitter.com/*` のみ。通信・データ収集なし（[PRIVACY.md](PRIVACY.md)）
 - MIT License
 
@@ -29,6 +31,11 @@ Open X profiles with **“All”** instead of “Posts” and **“Photos”** i
 3. **パッケージ化されていない拡張機能を読み込む** → このフォルダを選択
 4. x.com を開き直す
 
+### Firefox / Edge
+
+- Firefox: `node scripts/build-zip.mjs` で生成される `dist/photos-first-for-x-<ver>-firefox.zip` を AMO に提出（Firefox 128 以降）
+- Edge: Chrome 用 zip をそのまま Edge アドオンに提出可
+
 ### ユーザースクリプト（Tampermonkey / Violentmonkey）
 
 [userscript/x-tab-defaults.user.js](userscript/x-tab-defaults.user.js) をインストール。設定はファイル先頭の `CONFIG` を編集。
@@ -39,6 +46,7 @@ Open X profiles with **“All”** instead of “Posts” and **“Photos”** i
 
 | 項目 | 選択肢 |
 |---|---|
+| 動作モード | 固定（既定）／ 記憶（ドロップダウンで最後に選んだものを次回以降も使う） |
 | ポストタブ | すべて（既定）／ 変更しない |
 | メディアタブ | 画像（既定）／ 変更しない |
 | 手動選択を尊重 | ON（既定）／ OFF |
@@ -69,7 +77,7 @@ _locales/        ja / en
 userscript/      Tampermonkey 版（単体・設定はファイル内）
 store-assets/    ストア用画像の生成（node store-assets/build.mjs）
 docs/            掲載情報・公開手順
-scripts/build-zip.sh      提出用 zip
+scripts/build-zip.mjs     提出用 zip（Chrome/Edge 用 + Firefox 用）
 scripts/e2e-headless.mjs  headless Chromium での動作確認
 ```
 
@@ -87,3 +95,5 @@ scripts/e2e-headless.mjs  headless Chromium での動作確認
 ## License
 
 MIT © 2026 tland
+
+（内部コード名: x-profile-tab-defaults / 旧名: Tab Defaults for X）

@@ -2,7 +2,7 @@
 
 ## 0. 手元で最終確認
 
-自動テスト（ログアウト状態・headless）: `node scripts/e2e-headless.mjs` → 10/10 PASS（2026-08-17 確認済）
+自動テスト（ログアウト状態・headless）: `node scripts/e2e-headless.mjs` → 13/13 PASS（2026-08-17 確認済、記憶モード含む）
 - 初回ロード / SPA 遷移 / 手動選択の尊重 / 設定画面の描画・保存・反映
 - 予約パス 11 件（/home /explore /notifications /messages /i/bookmarks /search /settings /compose /i/lists /with_replies /status）で URL が書き換わらない
 - 拡張由来（page.js / bridge.js / `[x-tab-defaults]`）のコンソールエラー・例外がゼロ（検出器の自己診断つき）
@@ -31,10 +31,10 @@ gh repo create stland6338/x-profile-tab-defaults --public --source=. --push
 ## 2. zip を作る
 
 ```bash
-./scripts/build-zip.sh
+node scripts/build-zip.mjs
 ```
 
-→ `dist/x-tab-defaults-1.0.0.zip`（`store-assets/`, `docs/`, `userscript/`, `.git` などは含めない）
+→ `dist/photos-first-for-x-1.0.0-chrome.zip`（Chrome / Edge 用）と `dist/photos-first-for-x-1.0.0-firefox.zip`（AMO 用）。`store-assets/`, `docs/`, `userscript/`, `.git` は含めない
 
 ## 3. Chrome ウェブストア
 
@@ -45,6 +45,11 @@ gh repo create stland6338/x-profile-tab-defaults --public --source=. --push
 5. **配布**: 公開 / 無料 / 全リージョン
 6. 「審査のために送信」→ 通常 1〜3 日（長いと 1 週間程度）
 7. 公開されたら README の「インストール」にストア URL を追記
+
+## 3b. Firefox（AMO）/ Edge（任意・無料）
+
+- AMO: https://addons.mozilla.org/developers/ → 「新しいアドオンを登録」→ firefox zip → 掲載文は `docs/store-listing.md` の ja/en
+- Edge: https://partner.microsoft.com/dashboard/microsoftedge/ → chrome zip をそのまま
 
 ## 4. Greasy Fork（任意・即日）
 

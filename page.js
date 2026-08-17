@@ -1,4 +1,4 @@
-// Tab Defaults for X — page script (MAIN world, document_start)
+// Photos First for X — page script (MAIN world, document_start)
 //
 // x.com のプロフィールで
 //   /{user}          → /{user}/all               （ポスト → すべて）
@@ -13,12 +13,14 @@
 
   const EVENT_CONFIG = 'xtd:config';
   const EVENT_REQUEST = 'xtd:request';
+  const EVENT_REMEMBER = 'xtd:remember'; // 記憶モード: 手動選択を bridge 経由で保存
   const CONFIG_WAIT_MS = 1000; // bridge から設定が届かない場合のフォールバック待ち時間
 
   const DEFAULTS = {
+    mode: 'fixed',        // 'fixed'（いつも下の設定で開く） | 'remember'（最後に選んだものを次回以降も使う）
     postsTab: 'all',      // 'all' | ''（変更しない）
     mediaFilter: 'photo', // 'photo' | ''（変更しない）
-    respectManual: true,  // ドロップダウンでの手動選択を尊重する
+    respectManual: true,  // ドロップダウンでの手動選択を尊重する（remember モードでは常に有効）
     debug: false,
   };
   let config = null;
@@ -54,7 +56,8 @@
     if (!config) return null;
     const u = new URL(href, location.origin);
     const path = u.pathname.replace(/\/+$/, '') || '/';
-    const prev = prevHref && config.respectManual ? new URL(prevHref, location.origin) : null;
+    const respect = config.respectManual || config.mode === 'remember';
+    const prev = prevHref && respect ? new URL(prevHref, location.origin) : null;
     let m;
 
     if (config.postsTab && (m = path.match(USER_RE))) {
@@ -82,6 +85,37 @@
     return null;
   }
 
+  /**
+   * ドロップダウンでの手動選択を URL の遷移から推定する（記憶モード用）。
+   * 該当すれば保存すべき設定の一部を返す。なければ null。
+   *   /{user}/all|highlights → /{user}          … 「ポスト」を選んだ → postsTab ''
+   *   /{user}|/{user}/highlights → /{user}/all  … 「すべて」を選んだ → postsTab 'all'
+   *   /{user}/media?filter=photo → /{user}/media … 「動画」を選んだ → mediaFilter ''
+   *   /{user}/media → /{user}/media?filter=photo … 「画像」を選んだ → mediaFilter 'photo'
+   * （ハイライトはアカウントによって無いので記憶しない）
+   */
+  function detectManualChoice(href, prevHref) {
+    if (!prevHref) return null;
+    const u = new URL(href, location.origin);
+    const p = new URL(prevHref, location.origin);
+    const now = u.pathname.replace(/\/+$/, '').toLowerCase();
+    const prev = p.pathname.replace(/\/+$/, '').toLowerCase();
+    let m = now.match(/^\/([a-z0-9_]{1,15})(?:\/(all|highlights|media))?$/);
+    if (!m || RESERVED.has(m[1])) return null;
+    const user = m[1];
+    const base = `/${user}`;
+    const kind = m[2] || 'posts';
+    if (kind === 'posts' && (prev === `${base}/all` || prev === `${base}/highlights`)) return { postsTab: '' };
+    if (kind === 'all' && (prev === base || prev === `${base}/highlights`)) return { postsTab: 'all' };
+    if (kind === 'media' && prev === `${base}/media`) {
+      const nowPhoto = u.searchParams.get('filter') === 'photo';
+      const prevPhoto = p.searchParams.get('filter') === 'photo';
+      if (prevPhoto && !u.searchParams.has('filter')) return { mediaFilter: '' };
+      if (!p.searchParams.has('filter') && nowPhoto) return { mediaFilter: 'photo' };
+    }
+    return null;
+  }
+
   // ---- 履歴 API のフック ------------------------------------------------
   const origPushState = history.pushState;
   const origReplaceState = history.replaceState;
@@ -106,10 +140,19 @@
   }
 
   /** 遷移後に呼ぶ。X 側の処理が終わってから書き換えるため 1 tick 遅らせる */
-  function onNavigate(prevHref) {
+  function onNavigate(prevHref, fromPop = false) {
     if (scheduled) clearTimeout(scheduled);
     scheduled = setTimeout(() => {
       scheduled = null;
+      // 記憶モード: 手動選択なら保存（戻る/進むは選択ではないので除外）
+      if (config?.mode === 'remember' && !fromPop) {
+        const choice = detectManualChoice(currentHref(), prevHref);
+        if (choice) {
+          config = { ...config, ...choice };
+          log('remember', choice);
+          window.dispatchEvent(new CustomEvent(EVENT_REMEMBER, { detail: JSON.stringify(choice) }));
+        }
+      }
       const target = computeRedirect(currentHref(), prevHref);
       if (target) applyRedirect(target);
     }, 0);
@@ -135,7 +178,7 @@
     const prev = lastHref;
     const now = currentHref();
     lastHref = now;
-    if (!redirecting && now !== prev) onNavigate(prev);
+    if (!redirecting && now !== prev) onNavigate(prev, true);
   });
 
   // ---- 設定の受け取り -----------------------------------------------------

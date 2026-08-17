@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         Tab Defaults for X — 画像・すべてを既定に
-// @name:en      Tab Defaults for X
+// @name         Xのメディア欄を画像に戻す（ポストは「すべて」に） — Photos First for X
+// @name:en      Photos First for X
 // @namespace    https://github.com/stland6338/x-profile-tab-defaults
 // @version      1.0.0
-// @description  X のプロフィールを開いたとき、ポスト▼を「すべて」、メディア▼を「画像」に自動で切り替えます。リロードなし。
-// @description:en  Open X profiles with “All” instead of “Posts” and “Photos” instead of “Videos” — automatically, without reloading.
+// @description  X のメディア欄が「動画」で開くのを「画像」に、ポストを「すべて」に自動で戻します。リロードなし。
+// @description:en  Fixes X's new profile tabs: open Media on Photos (not Videos) and Posts on All — automatically, no reload.
 // @author       tland
 // @license      MIT
 // @match        https://x.com/*
@@ -20,11 +20,21 @@
   'use strict';
 
   const CONFIG = {
+    mode: 'fixed',        // 'fixed'（いつも下の設定で開く） | 'remember'（最後に選んだものを次回以降も使う）
     postsTab: 'all',      // 'all' | ''（変更しない）
     mediaFilter: 'photo', // 'photo' | ''（変更しない）
-    respectManual: true,  // ドロップダウンでの手動選択を尊重する
+    respectManual: true,  // ドロップダウンでの手動選択を尊重する（remember では常に有効）
     debug: false,
   };
+  // remember モードの記憶先（x.com の localStorage）
+  const STORE_KEY = 'xtd:remembered';
+  if (CONFIG.mode === 'remember') {
+    try { Object.assign(CONFIG, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (_) { /* ignore */ }
+  }
+  function remember(choice) {
+    Object.assign(CONFIG, choice);
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ postsTab: CONFIG.postsTab, mediaFilter: CONFIG.mediaFilter })); } catch (_) { /* ignore */ }
+  }
 
   const RESERVED = new Set([
     'home', 'explore', 'notifications', 'messages', 'chat', 'grok', 'i',
@@ -46,7 +56,7 @@
   function computeRedirect(href, prevHref) {
     const u = new URL(href, location.origin);
     const path = u.pathname.replace(/\/+$/, '') || '/';
-    const prev = prevHref && CONFIG.respectManual ? new URL(prevHref, location.origin) : null;
+    const prev = prevHref && (CONFIG.respectManual || CONFIG.mode === 'remember') ? new URL(prevHref, location.origin) : null;
     let m;
     if (CONFIG.postsTab && (m = path.match(USER_RE))) {
       const user = m[1];
@@ -63,6 +73,25 @@
       if (prev && prev.pathname.toLowerCase() === `/${user}/media`.toLowerCase() && prev.searchParams.has('filter')) return null;
       u.searchParams.set('filter', CONFIG.mediaFilter);
       return u.pathname + u.search;
+    }
+    return null;
+  }
+
+  function detectManualChoice(href, prevHref) {
+    if (!prevHref) return null;
+    const u = new URL(href, location.origin);
+    const p = new URL(prevHref, location.origin);
+    const now = u.pathname.replace(/\/+$/, '').toLowerCase();
+    const prev = p.pathname.replace(/\/+$/, '').toLowerCase();
+    const m = now.match(/^\/([a-z0-9_]{1,15})(?:\/(all|highlights|media))?$/);
+    if (!m || RESERVED.has(m[1])) return null;
+    const base = `/${m[1]}`;
+    const kind = m[2] || 'posts';
+    if (kind === 'posts' && (prev === `${base}/all` || prev === `${base}/highlights`)) return { postsTab: '' };
+    if (kind === 'all' && (prev === base || prev === `${base}/highlights`)) return { postsTab: 'all' };
+    if (kind === 'media' && prev === `${base}/media`) {
+      if (p.searchParams.get('filter') === 'photo' && !u.searchParams.has('filter')) return { mediaFilter: '' };
+      if (!p.searchParams.has('filter') && u.searchParams.get('filter') === 'photo') return { mediaFilter: 'photo' };
     }
     return null;
   }
@@ -86,10 +115,14 @@
       redirecting = false;
     }
   }
-  function onNavigate(prevHref) {
+  function onNavigate(prevHref, fromPop = false) {
     if (scheduled) clearTimeout(scheduled);
     scheduled = setTimeout(() => {
       scheduled = null;
+      if (CONFIG.mode === 'remember' && !fromPop) {
+        const choice = detectManualChoice(currentHref(), prevHref);
+        if (choice) { log('remember', choice); remember(choice); }
+      }
       const target = computeRedirect(currentHref(), prevHref);
       if (target) applyRedirect(target);
     }, 0);
@@ -112,7 +145,7 @@
     const prev = lastHref;
     const now = currentHref();
     lastHref = now;
-    if (!redirecting && now !== prev) onNavigate(prev);
+    if (!redirecting && now !== prev) onNavigate(prev, true);
   });
 
   // 初回ロード: X の起動前に replaceState だけすると「このページは存在しません」になるため、

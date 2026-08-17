@@ -56,8 +56,8 @@ writeFileSync(join(buildDir, 'options-preview.html'), optionsHtml);
 
 // ---- レンダリング -----------------------------------------------------------
 const targets = [
-  { src: 'screenshot-1.html', out: 'screenshot-1-1280x800.png', w: 1280, h: 800 },
-  { src: 'screenshot-2.html', out: 'screenshot-2-1280x800.png', w: 1280, h: 800 },
+  { src: 'screenshot-2.html', out: 'screenshot-1-1280x800.png', w: 1280, h: 800 }, // メディア→画像（主機能を先頭に）
+  { src: 'screenshot-1.html', out: 'screenshot-2-1280x800.png', w: 1280, h: 800 }, // ポスト→すべて
   { src: 'screenshot-3.html', out: 'screenshot-3-1280x800.png', w: 1280, h: 800 },
   { src: 'promo-small.html', out: 'promo-small-440x280.png', w: 440, h: 280 },
 ];
