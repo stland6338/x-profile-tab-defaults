@@ -38,7 +38,12 @@ node scripts/build-zip.mjs
 
 ## 3. Chrome ウェブストア
 
-2026-08-17 実施済み: zip アップロード → 掲載情報（ja/en 説明・画像・URL）→ プライバシー（単一用途・権限理由・リモートコードなし・データ収集なし・ポリシー URL）→ 設定（連絡先メール送信）まで完了。残りはメール確認リンク → 「審査のため送信」。
+2026-08-17 **審査のため送信済み（ステータス: 審査待ち）**。アイテム ID: `enkgkhmajfdojmdgfkmjnnegkhhigpli`。公開後の URL は https://chromewebstore.google.com/detail/enkgkhmajfdojmdgfkmjnnegkhhigpli になる見込み。
+
+審査結果は stland6338@gmail.com に届く。承認されたら:
+- README の「Chrome ウェブストア（審査中）」をストア URL に差し替え
+- `site/index.html` の「Chrome ウェブストア（審査中）」ボタンをストア URL に → `./scripts/deploy-site.sh`
+- 不承認の場合はメールの理由を見て修正 → zip 再アップロード（version を上げる）
 
 1. https://chrome.google.com/webstore/devconsole → デベロッパー登録（**$5、1回のみ**。Google アカウントで支払い）
 2. 「新しいアイテム」→ zip をアップロード
