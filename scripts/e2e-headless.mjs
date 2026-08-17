@@ -47,10 +47,29 @@ async function waitForDevtools() {
   throw new Error('devtools not ready');
 }
 
+// 拡張由来のコンソールエラー / 例外だけを集める（X 自身のエラーは無視）
+const extErrors = [];
+function collectExtError(msg, extId) {
+  const isOurs = (str) => !!str && (str.includes('[x-tab-defaults]') || (extId && str.includes(`chrome-extension://${extId}/`)));
+  if (msg.method === 'Runtime.exceptionThrown') {
+    const d = msg.params.exceptionDetails;
+    const text = `${d.text} ${d.exception?.description || ''} ${d.url || ''} ${JSON.stringify(d.stackTrace?.callFrames?.map((f) => f.url) || [])}`;
+    if (isOurs(text)) extErrors.push({ kind: 'exception', where: location_of(d), text: text.slice(0, 300) });
+  } else if (msg.method === 'Runtime.consoleAPICalled' && (msg.params.type === 'error' || msg.params.type === 'warning')) {
+    const args = msg.params.args.map((a) => a.value ?? a.description ?? '').join(' ');
+    const frames = JSON.stringify(msg.params.stackTrace?.callFrames?.map((f) => f.url) || []);
+    if (isOurs(args + frames)) extErrors.push({ kind: msg.params.type, where: frames.slice(0, 120), text: args.slice(0, 300) });
+  }
+}
+function location_of(d) { return `${d.url || ''}:${d.lineNumber ?? ''}`; }
+
 class CDP {
-  constructor(ws) { this.ws = ws; this.id = 0; this.pending = new Map(); ws.onmessage = (m) => this.onMessage(JSON.parse(m.data)); }
+  constructor(ws) { this.ws = ws; this.id = 0; this.pending = new Map(); this.extId = null; ws.onmessage = (m) => this.onMessage(JSON.parse(m.data)); }
   static async connect(url) { const ws = new WebSocket(url); await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; }); return new CDP(ws); }
-  onMessage(msg) { if (msg.id && this.pending.has(msg.id)) { const { res, rej } = this.pending.get(msg.id); this.pending.delete(msg.id); msg.error ? rej(new Error(msg.error.message)) : res(msg.result); } }
+  onMessage(msg) {
+    if (msg.id && this.pending.has(msg.id)) { const { res, rej } = this.pending.get(msg.id); this.pending.delete(msg.id); msg.error ? rej(new Error(msg.error.message)) : res(msg.result); return; }
+    if (msg.method) collectExtError(msg, this.extId);
+  }
   send(method, params = {}) { const id = ++this.id; this.ws.send(JSON.stringify({ id, method, params })); return new Promise((res, rej) => this.pending.set(id, { res, rej })); }
   async eval(expr) { const r = await this.send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.text + ' ' + JSON.stringify(r.exceptionDetails.exception?.description)); return r.result.value; }
   async shot(name) { const s = await this.send('Page.captureScreenshot', { format: 'png' }); writeFileSync(join(outDir, name), Buffer.from(s.data, 'base64')); }
@@ -93,10 +112,12 @@ async function newTab(url) {
   const list = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
   const t = list.find((x) => x.id === targetId);
   const cdp = await CDP.connect(t.webSocketDebuggerUrl);
+  cdp.extId = currentExtId;
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
   return cdp;
 }
+let currentExtId = null;
 
 const results = [];
 function record(name, ok, detail) { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'} ${name} ${detail ?? ''}`); }
@@ -113,6 +134,7 @@ try {
   const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
   const sw = targets.find((x) => x.type === 'service_worker' && x.url.startsWith('chrome-extension://') && x.url.endsWith('/background.js'));
   const extId = sw ? new URL(sw.url).host : null;
+  currentExtId = extId;
   record('extension loaded (service worker found)', !!extId, extId);
 
   // 1) 初回ロード: /{user} → /{user}/all（描画前なので location.replace）
@@ -141,11 +163,17 @@ try {
   else skip('SPA /media → ?filter=photo', `(X redirected while logged out: ${s.loc})`);
   await cdp.shot('e2e-2-photo.png');
 
-  // 3) 予約パスは触らない（ログアウト時は X が別ページへ飛ばすことがあるので /all が付かないことだけ見る）
-  await navigate(cdp, 'https://x.com/explore');
-  await sleep(3000);
-  const loc3 = await cdp.eval('location.pathname');
-  record('reserved path /explore untouched', !/\/all$/.test(loc3), loc3);
+  // 3) 予約パスは触らない（ログアウト時は X がログイン等へ飛ばすことがあるので
+  //    「/all が付かない」「filter=photo が付かない」ことだけを見る）
+  const RESERVED_PATHS = ['/home', '/explore', '/notifications', '/messages', '/i/bookmarks', '/search?q=test', '/settings', '/compose/post', '/i/lists', '/nijisanji_app/with_replies', '/nijisanji_app/status/1'];
+  const broken = [];
+  for (const p of RESERVED_PATHS) {
+    await navigate(cdp, 'https://x.com' + p);
+    await sleep(2500);
+    const loc = await cdp.eval('location.pathname + location.search');
+    if (/\/all$/.test(loc) || /filter=photo/.test(loc)) broken.push(`${p} → ${loc}`);
+  }
+  record(`reserved paths untouched (${RESERVED_PATHS.length} paths)`, broken.length === 0, broken.length ? broken.join(', ') : 'ok');
   cdp.close();
 
   // 4) オプション画面
@@ -155,6 +183,12 @@ try {
     const o = await opt.eval(`(() => ({ title: document.title, checked: [...document.querySelectorAll('input:checked')].map(i => i.name + '=' + (i.value || i.checked)), h2: [...document.querySelectorAll('h2')].map(h => h.textContent) }))()`);
     record('options page renders (ja, defaults checked)', o.checked.length === 3 && o.h2.length === 2, JSON.stringify(o));
     await opt.shot('e2e-3-options.png');
+    // エラー検出器そのものの自己診断: 拡張ページで意図的にエラーを出して拾えることを確認
+    await opt.eval(`(() => { console.error('[x-tab-defaults] selfcheck'); return true; })()`);
+    await sleep(500);
+    const si = extErrors.findIndex((e) => e.text.includes('selfcheck'));
+    record('console error detector works (selfcheck)', si >= 0, si >= 0 ? 'captured' : 'NOT captured');
+    if (si >= 0) extErrors.splice(si, 1);
 
     // 5) 設定変更 → 反映: postsTab='' （変更しない）→ /{user} のまま
     await opt.eval(`(() => { document.querySelector('input[name="postsTab"][value=""]').click(); return true; })()`);
@@ -175,6 +209,7 @@ try {
 } finally {
   chrome.kill('SIGKILL');
 }
+record('no console errors/exceptions from the extension', extErrors.length === 0, extErrors.length ? JSON.stringify(extErrors.slice(0, 5)) : 'none');
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);

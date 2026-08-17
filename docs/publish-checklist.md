@@ -2,7 +2,10 @@
 
 ## 0. 手元で最終確認
 
-自動テスト（ログアウト状態・headless）: `node scripts/e2e-headless.mjs` → 8/8 PASS（2026-08-17 確認済）
+自動テスト（ログアウト状態・headless）: `node scripts/e2e-headless.mjs` → 10/10 PASS（2026-08-17 確認済）
+- 初回ロード / SPA 遷移 / 手動選択の尊重 / 設定画面の描画・保存・反映
+- 予約パス 11 件（/home /explore /notifications /messages /i/bookmarks /search /settings /compose /i/lists /with_replies /status）で URL が書き換わらない
+- 拡張由来（page.js / bridge.js / `[x-tab-defaults]`）のコンソールエラー・例外がゼロ（検出器の自己診断つき）
 
 実ブラウザ（ログイン状態）で:
 
@@ -11,8 +14,8 @@
 - [ ] 「メディア」を押す → 「画像 ▾」になる
 - [ ] 「画像 ▾」→ドロップダウンで「動画」を選ぶ → 動画のまま（上書きされない）
 - [ ] ツールバーのアイコン → 設定画面が開く → ポストタブを「変更しない」にする → プロフィールを開き直すと「ポスト」のまま → 「すべて」に戻す
-- [ ] `/home` `/explore` `/notifications` `/i/bookmarks` などが壊れていない
-- [ ] DevTools コンソールにエラーが出ていない
+- [ ] `/home` `/explore` `/notifications` `/i/bookmarks` などが壊れていない（自動テストでも確認済み。ログイン状態での念押し）
+- [ ] DevTools コンソールに `[x-tab-defaults]` や `page.js` / `bridge.js` 由来のエラーが出ていない（X 自身のエラーは無視してよい）
 
 ## 1. GitHub 公開
 

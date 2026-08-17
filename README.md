@@ -54,7 +54,7 @@ X の Web 版は表示するタブが URL で決まります。`page.js`（MAIN 
 ## テスト
 
 ```bash
-node scripts/e2e-headless.mjs   # 拡張を読み込んだ headless Chromium で初回ロード / SPA 遷移 / 設定画面を確認
+node scripts/e2e-headless.mjs   # 拡張を読み込んだ headless Chromium で初回ロード / SPA 遷移 / 予約パス / 設定画面 / 拡張由来のコンソールエラーを確認
 ```
 
 ログアウト状態の x.com を使うため、X 側の都合（ログイン誘導・旧 UI の A/B 配信）で一部 SKIP になることがあります。ログイン状態の挙動は実ブラウザで確認してください（[docs/publish-checklist.md](docs/publish-checklist.md) の手順 0）。
