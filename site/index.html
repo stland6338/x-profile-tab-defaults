@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photos First for X — Xのメディア欄を画像に戻す</title>
+<meta name="description" content="X のメディア欄が「動画」で開くのを「画像」に、ポストを「すべて」に自動で戻すブラウザ拡張。リロードなし・データ収集なし・オープンソース。">
+<link rel="icon" href="icon.png">
+<style>
+  :root { color-scheme: light dark; --fg: #0f1419; --muted: #536471; --bg: #fff; --accent: #0e7490; --border: #e6ecf0; --card: #f7f9f9; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #e7e9ea; --muted: #8b98a5; --bg: #0b1220; --accent: #5eead4; --border: #2f3336; --card: #111a2b; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 60px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  header img { width: 56px; height: 56px; border-radius: 12px; }
+  h1 { font-size: 28px; margin: 0; line-height: 1.2; } h1 small { display: block; font-size: 15px; color: var(--muted); font-weight: 500; margin-top: 4px; }
+  h2 { font-size: 19px; margin: 32px 0 8px; }
+  a { color: var(--accent); }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 8px; }
+  .btn { display: inline-block; padding: 10px 16px; border-radius: 9999px; background: var(--accent); color: #fff; text-decoration: none; font-weight: 700; }
+  .btn.alt { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; } th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); } th { color: var(--muted); font-weight: 600; }
+  img.shot { max-width: 100%; border-radius: 12px; border: 1px solid var(--border); margin-top: 14px; }
+  footer { margin-top: 44px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.png" alt="">
+    <h1>Photos First for X<small>Xのメディア欄を画像に戻す（ポストは「すべて」に）</small></h1>
+  </header>
+
+  <p>2026 年 7 月の X プロフィール改修で、メディア欄は開くたびに「動画」、ポストは「ポスト」に戻るようになりました。この拡張はプロフィールを開いた瞬間に <strong>メディア▼ → 画像</strong>、<strong>ポスト▼ → すべて</strong> を自動で選びます。リロードなし・設定不要・データ収集なし。</p>
+
+  <div class="btns">
+    <a class="btn" id="cws" href="https://github.com/stland6338/x-profile-tab-defaults#インストール">Chrome ウェブストア（審査中）</a>
+    <a class="btn alt" href="https://github.com/stland6338/x-profile-tab-defaults">GitHub（ソース・手動インストール）</a>
+    <a class="btn alt" href="https://github.com/stland6338/x-profile-tab-defaults/blob/main/userscript/x-tab-defaults.user.js">ユーザースクリプト版</a>
+  </div>
+
+  <img class="shot" src="screenshot-1.png" alt="メディア欄が動画ではなく画像から開くようになる様子">
+
+  <h2>設定</h2>
+  <div class="card">
+    <table>
+      <tr><th>動作モード</th><td>固定（既定）／ 記憶（ドロップダウンで最後に選んだものを次回以降も使う）</td></tr>
+      <tr><th>ポストタブ</th><td>すべて（既定）／ 変更しない</td></tr>
+      <tr><th>メディアタブ</th><td>画像（既定）／ 変更しない</td></tr>
+      <tr><th>手動選択の尊重</th><td>ON（既定）／ OFF</td></tr>
+    </table>
+  </div>
+
+  <h2>English</h2>
+  <p>Fixes X's new profile tabs: opens Media on <strong>Photos</strong> (not Videos) and Posts on <strong>All</strong> — automatically, without reloading. Options let you turn either rule off or switch to "Remember" mode. No data collection, no network requests, open source (MIT).</p>
+
+  <footer>
+    <a href="privacy.html">Privacy Policy / プライバシーポリシー</a> · MIT License · 非公式ツールです（X Corp. とは無関係）
+  </footer>
+</main>
+</body>
+</html>

@@ -20,6 +20,8 @@ Fixes X's new profile tabs: open Media on **Photos** (not Videos) and Posts on *
 
 ## インストール
 
+サイト: https://photos-first-for-x.pages.dev/ ／ プライバシーポリシー: https://photos-first-for-x.pages.dev/privacy
+
 ### Chrome ウェブストア
 
 （審査中）
@@ -79,6 +81,8 @@ store-assets/    ストア用画像の生成（node store-assets/build.mjs）
 docs/            掲載情報・公開手順
 scripts/build-zip.mjs     提出用 zip（Chrome/Edge 用 + Firefox 用）
 scripts/e2e-headless.mjs  headless Chromium での動作確認
+scripts/deploy-site.sh    site/（ランディング＋プライバシーポリシー）を Cloudflare Pages へ
+site/            https://photos-first-for-x.pages.dev/
 ```
 
 ## 注意 / 既知の制限

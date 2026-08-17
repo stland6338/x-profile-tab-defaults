@@ -8,8 +8,9 @@
 |---|---|
 | カテゴリ | Social & Communication（または Productivity → Tools） |
 | 言語 | 日本語（デフォルト）＋ English |
-| 公式 URL / サポート URL | https://github.com/stland6338/x-profile-tab-defaults |
-| プライバシーポリシー URL | https://github.com/stland6338/x-profile-tab-defaults/blob/main/PRIVACY.md |
+| ホームページ URL | https://photos-first-for-x.pages.dev/ （`site/`、`./scripts/deploy-site.sh` でデプロイ） |
+| サポート URL | https://github.com/stland6338/x-profile-tab-defaults |
+| プライバシーポリシー URL | https://photos-first-for-x.pages.dev/privacy （GitHub の blob URL は Google のチェッカーが取得できず NG だった） |
 | 公開範囲 | 公開（Public） |
 | 価格 | 無料 |
 

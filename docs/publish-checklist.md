@@ -38,6 +38,8 @@ node scripts/build-zip.mjs
 
 ## 3. Chrome ウェブストア
 
+2026-08-17 実施済み: zip アップロード → 掲載情報（ja/en 説明・画像・URL）→ プライバシー（単一用途・権限理由・リモートコードなし・データ収集なし・ポリシー URL）→ 設定（連絡先メール送信）まで完了。残りはメール確認リンク → 「審査のため送信」。
+
 1. https://chrome.google.com/webstore/devconsole → デベロッパー登録（**$5、1回のみ**。Google アカウントで支払い）
 2. 「新しいアイテム」→ zip をアップロード
 3. **ストアの掲載情報**: `docs/store-listing.md` からコピペ（ja を既定言語に、en を追加）
