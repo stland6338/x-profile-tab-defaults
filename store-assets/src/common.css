@@ -1,0 +1,42 @@
+/* ストア用画像の共通スタイル（1280x800 / 440x280 で headless Chromium にレンダリング） */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  width: 1280px; height: 800px; overflow: hidden;
+  background: radial-gradient(1200px 700px at 20% 0%, #0e7490 0%, #0b1220 55%, #05070d 100%);
+  color: #e7e9ea;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { padding: 56px 72px; height: 100%; display: flex; flex-direction: column; }
+.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
+.brand img { width: 44px; height: 44px; border-radius: 10px; }
+.brand .name { font-size: 20px; font-weight: 700; letter-spacing: .2px; color: #cfeff0; }
+h1 { margin: 0 0 8px; font-size: 44px; line-height: 1.25; font-weight: 800; letter-spacing: -.3px; }
+h1 em { font-style: normal; color: #5eead4; }
+.sub { margin: 0 0 34px; font-size: 20px; color: #9fb3c8; }
+.stage { flex: 1; display: flex; align-items: center; gap: 28px; }
+.card { flex: 1; background: #000; border: 1px solid #2f3336; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+.card .label { padding: 12px 18px; font-size: 14px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #71767b; border-bottom: 1px solid #2f3336; background: #0a0a0a; }
+.card .label.after { color: #5eead4; }
+.arrow { font-size: 44px; color: #5eead4; flex: 0 0 auto; }
+/* X 風タブバー */
+.tabs { display: flex; height: 53px; border-bottom: 1px solid #2f3336; }
+.tab { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; color: #71767b; font-size: 15px; font-weight: 500; }
+.tab.active { color: #e7e9ea; font-weight: 700; }
+.tab.active::after { content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 56px; height: 4px; border-radius: 9999px; background: #1d9bf0; }
+.tab .chev { display: inline-block; width: 9px; height: 9px; margin-left: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-3px) rotate(45deg); }
+.tab.hl { outline: 2px solid #5eead4; outline-offset: -2px; border-radius: 6px; }
+/* 中身のプレースホルダ */
+.feed { padding: 16px 18px; display: grid; gap: 14px; }
+.post { display: grid; grid-template-columns: 40px 1fr; gap: 12px; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: #2f3336; }
+.line { height: 10px; border-radius: 6px; background: #2f3336; }
+.line.w60 { width: 60%; } .line.w85 { width: 85%; } .line.w40 { width: 40%; }
+.grid { padding: 4px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.cell { aspect-ratio: 1; border-radius: 4px; background: linear-gradient(135deg, #1e293b, #334155); position: relative; }
+.cell.video::after { content: ""; position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform: translate(-40%, -50%); border-left: 16px solid rgba(255,255,255,.85); border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
+.cell.photo { background: linear-gradient(160deg, #0f766e 0%, #134e4a 45%, #1e293b 100%); }
+.cell.photo::after { content: ""; position: absolute; left: 22%; top: 30%; width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.85); }
+.foot { margin-top: 26px; display: flex; gap: 22px; font-size: 16px; color: #9fb3c8; }
+.foot span::before { content: "✓ "; color: #5eead4; }

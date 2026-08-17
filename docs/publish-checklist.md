@@ -1,0 +1,59 @@
+# 公開チェックリスト
+
+## 0. 手元で最終確認
+
+自動テスト（ログアウト状態・headless）: `node scripts/e2e-headless.mjs` → 8/8 PASS（2026-08-17 確認済）
+
+実ブラウザ（ログイン状態）で:
+
+- [ ] `chrome://extensions` → デベロッパーモード → 「パッケージ化されていない拡張機能を読み込む」でこのフォルダを読み込む
+- [ ] x.com で誰かのプロフィールを開く → タブが「すべて ▾」になる
+- [ ] 「メディア」を押す → 「画像 ▾」になる
+- [ ] 「画像 ▾」→ドロップダウンで「動画」を選ぶ → 動画のまま（上書きされない）
+- [ ] ツールバーのアイコン → 設定画面が開く → ポストタブを「変更しない」にする → プロフィールを開き直すと「ポスト」のまま → 「すべて」に戻す
+- [ ] `/home` `/explore` `/notifications` `/i/bookmarks` などが壊れていない
+- [ ] DevTools コンソールにエラーが出ていない
+
+## 1. GitHub 公開
+
+```bash
+cd ~/Claude/Projects/x-profile-tab-defaults
+git init && git add -A && git commit -m "feat: initial release 1.0.0"
+gh repo create stland6338/x-profile-tab-defaults --public --source=. --push
+```
+
+- リポジトリの About に説明と `chrome-extension`, `x`, `twitter`, `userscript` のトピック
+- PRIVACY.md の URL が掲載情報と一致していることを確認
+
+## 2. zip を作る
+
+```bash
+./scripts/build-zip.sh
+```
+
+→ `dist/x-tab-defaults-1.0.0.zip`（`store-assets/`, `docs/`, `userscript/`, `.git` などは含めない）
+
+## 3. Chrome ウェブストア
+
+1. https://chrome.google.com/webstore/devconsole → デベロッパー登録（**$5、1回のみ**。Google アカウントで支払い）
+2. 「新しいアイテム」→ zip をアップロード
+3. **ストアの掲載情報**: `docs/store-listing.md` からコピペ（ja を既定言語に、en を追加）
+4. **プライバシーへの取り組み**: 同ドキュメントの表のとおり回答
+5. **配布**: 公開 / 無料 / 全リージョン
+6. 「審査のために送信」→ 通常 1〜3 日（長いと 1 週間程度）
+7. 公開されたら README の「インストール」にストア URL を追記
+
+## 4. Greasy Fork（任意・即日）
+
+1. https://greasyfork.org でアカウント作成（GitHub ログイン可）
+2. 「スクリプトを投稿」→ `userscript/x-tab-defaults.user.js` の内容を貼り付け
+3. README にリンクを追記
+
+## 5. 告知
+
+- note / Zenn 記事: 「X のメディア欄が動画デフォになった → 画像デフォに戻す拡張を作った」（仕組み: URL 監視 + popstate、Control Panel for Twitter との違い）
+- X で投稿（スクリーンショット 1 を添付）
+
+## 6. 更新時
+
+- `manifest.json` と `userscript/*.user.js` の `version` を上げる → `CHANGELOG.md` に追記 → zip を作り直してアップロード

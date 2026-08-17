@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    width: 440px; height: 280px; overflow: hidden;
+    background: radial-gradient(520px 320px at 15% 0%, #0e7490 0%, #0b1220 60%, #05070d 100%);
+    color: #e7e9ea;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column; justify-content: center; padding: 28px 30px;
+  }
+  .row { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .row img { width: 64px; height: 64px; border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.4); }
+  .title { font-size: 26px; font-weight: 800; letter-spacing: -.2px; line-height: 1.15; }
+  .title small { display: block; font-size: 13px; font-weight: 600; color: #9fb3c8; margin-top: 4px; letter-spacing: .3px; }
+  .tabs { display: flex; height: 44px; border: 1px solid #2f3336; border-radius: 12px; background: #000; overflow: hidden; }
+  .tab { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; color: #71767b; font-size: 14px; font-weight: 500; }
+  .tab.active { color: #e7e9ea; font-weight: 700; }
+  .tab.active::after { content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 44px; height: 3px; border-radius: 9999px; background: #1d9bf0; }
+  .tab .chev { display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+  .tab.hl { color: #5eead4; }
+  .tab.hl::after { background: #5eead4; }
+  .cap { margin-top: 12px; font-size: 13px; color: #9fb3c8; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <img src="../../icons/icon128.png" alt="">
+    <div class="title">Tab Defaults for X<small>すべて／画像を既定に<br>“All” &amp; “Photos” by default</small></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active hl">すべて<span class="chev"></span></div>
+    <div class="tab">返信</div>
+    <div class="tab">リポスト</div>
+    <div class="tab hl">画像<span class="chev"></span></div>
+    <div class="tab">記事</div>
+  </div>
+  <div class="cap">No reload · No data collection · Open source</div>
+</body>
+</html>

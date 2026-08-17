@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "Tab Defaults for X — 画像・すべてを既定に"
+  },
+  "extShortName": {
+    "message": "Tab Defaults for X"
+  },
+  "extDesc": {
+    "message": "X のプロフィールを開いたとき、ポスト▼を「すべて」、メディア▼を「画像」に自動で切り替えます。リロードなし・設定不要。"
+  },
+  "optionsTitle": {
+    "message": "Tab Defaults for X"
+  },
+  "postsTabHeading": {
+    "message": "ポストタブ（ポスト ▾）"
+  },
+  "postsTabHint": {
+    "message": "プロフィールを開いたときに表示するビュー"
+  },
+  "postsTabAll": {
+    "message": "すべて"
+  },
+  "postsTabNone": {
+    "message": "変更しない（X 標準: ポスト）"
+  },
+  "mediaTabHeading": {
+    "message": "メディアタブ（動画 ▾）"
+  },
+  "mediaTabHint": {
+    "message": "メディアタブを開いたときに表示するビュー"
+  },
+  "mediaTabPhoto": {
+    "message": "画像"
+  },
+  "mediaTabNone": {
+    "message": "変更しない（X 標準: 動画）"
+  },
+  "respectManual": {
+    "message": "ドロップダウンでの手動選択を尊重する"
+  },
+  "respectManualHint": {
+    "message": "自分でドロップダウンから「ポスト」「動画」を選んだときは、そのままにします。"
+  },
+  "saved": {
+    "message": "保存しました"
+  },
+  "footerNote": {
+    "message": "変更は即時反映されます。データは一切収集しません。"
+  }
+}

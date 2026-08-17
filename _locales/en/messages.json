@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "Tab Defaults for X"
+  },
+  "extShortName": {
+    "message": "Tab Defaults for X"
+  },
+  "extDesc": {
+    "message": "Open X profiles with “All” instead of “Posts” and “Photos” instead of “Videos” — automatically, without reloading."
+  },
+  "optionsTitle": {
+    "message": "Tab Defaults for X"
+  },
+  "postsTabHeading": {
+    "message": "Posts tab (Posts ▾)"
+  },
+  "postsTabHint": {
+    "message": "Which view to open when you open a profile."
+  },
+  "postsTabAll": {
+    "message": "All"
+  },
+  "postsTabNone": {
+    "message": "Don't change (X default: Posts)"
+  },
+  "mediaTabHeading": {
+    "message": "Media tab (Videos ▾)"
+  },
+  "mediaTabHint": {
+    "message": "Which view to open when you open the Media tab."
+  },
+  "mediaTabPhoto": {
+    "message": "Photos"
+  },
+  "mediaTabNone": {
+    "message": "Don't change (X default: Videos)"
+  },
+  "respectManual": {
+    "message": "Respect manual selection from the dropdown"
+  },
+  "respectManualHint": {
+    "message": "When you pick “Posts” or “Videos” from the dropdown yourself, keep it instead of switching back."
+  },
+  "saved": {
+    "message": "Saved"
+  },
+  "footerNote": {
+    "message": "Changes apply immediately. No data is collected."
+  }
+}

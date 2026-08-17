@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="optionsTitle">Tab Defaults for X</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icons/icon48.png" alt="" width="32" height="32">
+      <h1 data-i18n="optionsTitle">Tab Defaults for X</h1>
+    </header>
+
+    <section>
+      <h2 data-i18n="postsTabHeading">Posts tab (Posts ▾)</h2>
+      <p class="hint" data-i18n="postsTabHint">Which view to open when a profile is opened.</p>
+      <label><input type="radio" name="postsTab" value="all"> <span data-i18n="postsTabAll">All</span></label>
+      <label><input type="radio" name="postsTab" value=""> <span data-i18n="postsTabNone">Don't change (X default: Posts)</span></label>
+    </section>
+
+    <section>
+      <h2 data-i18n="mediaTabHeading">Media tab (Videos ▾)</h2>
+      <p class="hint" data-i18n="mediaTabHint">Which view to open when the Media tab is opened.</p>
+      <label><input type="radio" name="mediaFilter" value="photo"> <span data-i18n="mediaTabPhoto">Photos</span></label>
+      <label><input type="radio" name="mediaFilter" value=""> <span data-i18n="mediaTabNone">Don't change (X default: Videos)</span></label>
+    </section>
+
+    <section>
+      <label class="check"><input type="checkbox" name="respectManual"> <span data-i18n="respectManual">Respect manual selection from the dropdown</span></label>
+      <p class="hint" data-i18n="respectManualHint">When you pick “Posts” or “Videos” from the dropdown yourself, keep it instead of switching back.</p>
+    </section>
+
+    <p class="status" id="status" aria-live="polite"></p>
+
+    <footer>
+      <span data-i18n="footerNote">Changes apply immediately. No data is collected.</span>
+      · <a id="repoLink" href="https://github.com/stland6338/x-profile-tab-defaults" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
