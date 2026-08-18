@@ -38,7 +38,7 @@ node scripts/build-zip.mjs
 
 ## 3. Chrome ウェブストア
 
-2026-08-17 **審査のため送信済み（ステータス: 審査待ち）**。アイテム ID: `enkgkhmajfdojmdgfkmjnnegkhhigpli`。公開後の URL は https://chromewebstore.google.com/detail/enkgkhmajfdojmdgfkmjnnegkhhigpli になる見込み。
+2026-08-17 審査のため送信 → **2026-08-18 公開（v1.0.0）**: https://chromewebstore.google.com/detail/photos-first-for-x/enkgkhmajfdojmdgfkmjnnegkhhigpli
 
 審査結果は stland6338@gmail.com に届く。承認されたら:
 - README の「Chrome ウェブストア（審査中）」をストア URL に差し替え

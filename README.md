@@ -24,7 +24,9 @@ Fixes X's new profile tabs: open Media on **Photos** (not Videos) and Posts on *
 
 ### Chrome ウェブストア
 
-（審査中）
+https://chromewebstore.google.com/detail/photos-first-for-x/enkgkhmajfdojmdgfkmjnnegkhhigpli
+
+「Chrome に追加」を押すだけで動きます。
 
 ### 手動（デベロッパーモード）
 
