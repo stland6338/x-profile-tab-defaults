@@ -20,6 +20,10 @@ jobs:
       - name: Install Chromium (Playwright)
         run: npx --yes playwright@1 install --with-deps chromium
       - name: Run E2E against live x.com
+        env:
+          # ランナー既定の CHROME_BIN（ブランド版 Google Chrome）は 137 以降 --load-extension を無視するので、
+          # 空にして Playwright の Chrome for Testing を使わせる
+          CHROME_BIN: ''
         run: |
           set +e
           node scripts/e2e-headless.mjs 2>&1 | tee e2e.log
