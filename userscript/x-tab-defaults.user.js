@@ -2,7 +2,7 @@
 // @name         Xのメディア欄を画像に戻す（ポストは「すべて」に） — Photos First for X
 // @name:en      Photos First for X
 // @namespace    https://github.com/stland6338/x-profile-tab-defaults
-// @version      1.0.0
+// @version      1.0.1
 // @description  X のメディア欄が「動画」で開くのを「画像」に、ポストを「すべて」に自動で戻します。リロードなし。
 // @description:en  Fixes X's new profile tabs: open Media on Photos (not Videos) and Posts on All — automatically, no reload.
 // @author       tland
@@ -58,21 +58,21 @@
     const path = u.pathname.replace(/\/+$/, '') || '/';
     const prev = prevHref && (CONFIG.respectManual || CONFIG.mode === 'remember') ? new URL(prevHref, location.origin) : null;
     let m;
-    if (CONFIG.postsTab && (m = path.match(USER_RE))) {
+    if (CONFIG.postsTab && !isBroken('posts') && (m = path.match(USER_RE))) {
       const user = m[1];
       if (RESERVED.has(user.toLowerCase())) return null;
       if (prev) {
         const pp = prev.pathname.toLowerCase();
         if (POSTS_VARIANTS.some((v) => pp === `/${user}/${v}`.toLowerCase())) return null;
       }
-      return `/${user}/${CONFIG.postsTab}`;
+      return { href: `/${user}/${CONFIG.postsTab}`, kind: 'posts' };
     }
-    if (CONFIG.mediaFilter && (m = path.match(MEDIA_RE)) && !u.searchParams.has('filter')) {
+    if (CONFIG.mediaFilter && !isBroken('media') && (m = path.match(MEDIA_RE)) && !u.searchParams.has('filter')) {
       const user = m[1];
       if (RESERVED.has(user.toLowerCase())) return null;
       if (prev && prev.pathname.toLowerCase() === `/${user}/media`.toLowerCase() && prev.searchParams.has('filter')) return null;
       u.searchParams.set('filter', CONFIG.mediaFilter);
-      return u.pathname + u.search;
+      return { href: u.pathname + u.search, kind: 'media' };
     }
     return null;
   }
@@ -103,16 +103,80 @@
   let scheduled = null;
   let lastHref = currentHref();
 
-  function applyRedirect(target) {
-    if (currentHref() === target) return;
+  function softNavigate(href) {
     redirecting = true;
     try {
-      log('redirect', currentHref(), '→', target);
-      origReplaceState.call(history, history.state, '', target);
+      origReplaceState.call(history, history.state, '', href);
       lastHref = currentHref();
       window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
     } finally {
       redirecting = false;
+    }
+  }
+  function applyRedirect(target) {
+    const from = currentHref();
+    if (from === target.href) return;
+    log('redirect', from, '→', target.href);
+    softNavigate(target.href);
+    // フェイルセーフ: 書き換え先が「存在しないページ」なら元に戻して、この種類の書き換えを止める
+    watchRender(target.href, () => {
+      markBroken(target.kind, from, target.href);
+      softNavigate(from);
+      watchRender(from, () => setBroken(target.kind, false)); // 元の URL でも同じエラーなら拡張のせいではない
+    });
+  }
+
+  // ---- フェイルセーフ（page.js と同じ）--------------------------------------
+  // X の URL 仕様が変わって書き換え先が「このページは存在しません」になっても、害を出さず「何もしない」に倒れる。
+  const ERROR_SEL = '[data-testid="error-detail"]';
+  const TAB_SEL = '[role="tablist"] [role="tab"]';
+  const WATCH_MS = 15000; // X の起動が遅い環境でもエラー描画まで待てるように長め
+  const WATCH_INTERVAL_MS = 250;
+  const BROKEN_TTL_MS = 30 * 60 * 1000;
+  const BROKEN_KEY = 'xtd:broken';   // localStorage: { posts?: <expires ms>, media?: <expires ms> }
+  const PENDING_KEY = 'xtd:pending'; // sessionStorage: 初回ロードの location.replace をまたぐメモ
+  const store = {
+    get(area, key) { try { return JSON.parse(area.getItem(key) || 'null'); } catch (_) { return null; } },
+    set(area, key, val) { try { val == null ? area.removeItem(key) : area.setItem(key, JSON.stringify(val)); } catch (_) { /* ignore */ } },
+  };
+  function isBroken(kind) {
+    const b = store.get(localStorage, BROKEN_KEY);
+    return !!(b && typeof b[kind] === 'number' && b[kind] > Date.now());
+  }
+  function setBroken(kind, on) {
+    const b = store.get(localStorage, BROKEN_KEY) || {};
+    if (on) b[kind] = Date.now() + BROKEN_TTL_MS; else delete b[kind];
+    store.set(localStorage, BROKEN_KEY, Object.keys(b).length ? b : null);
+  }
+  function markBroken(kind, from, to) {
+    setBroken(kind, true);
+    console.warn(`[x-tab-defaults] X reported "page doesn't exist" for ${to}. Reverting to ${from} and pausing ${kind} redirects for ${BROKEN_TTL_MS / 60000} min. If this keeps happening, X may have changed its URLs — please report: https://github.com/stland6338/x-profile-tab-defaults/issues`);
+  }
+  function watchRender(expectHref, onError) {
+    let seenClear = !document.querySelector(ERROR_SEL);
+    let streak = 0; // 一瞬だけ出るエラー表示で誤検知しないよう、2 回連続で見えたときだけ発火
+    const t0 = Date.now();
+    const timer = setInterval(() => {
+      if (currentHref() !== expectHref || Date.now() - t0 > WATCH_MS) { clearInterval(timer); return; }
+      const err = !!document.querySelector(ERROR_SEL);
+      if (!seenClear) { if (!err) seenClear = true; return; }
+      streak = err && document.querySelectorAll(TAB_SEL).length === 0 ? streak + 1 : 0;
+      if (streak >= 2) { clearInterval(timer); onError(); }
+    }, WATCH_INTERVAL_MS);
+  }
+  function resumePendingWatch() {
+    const p = store.get(sessionStorage, PENDING_KEY);
+    if (!p) return;
+    store.set(sessionStorage, PENDING_KEY, null);
+    if (typeof p.t !== 'number' || Date.now() - p.t > 20000) return;
+    if (p.step === 'watch' && currentHref() === p.to) {
+      watchRender(p.to, () => {
+        markBroken(p.kind, p.from, p.to);
+        store.set(sessionStorage, PENDING_KEY, { step: 'verify', from: p.from, kind: p.kind, t: Date.now() });
+        location.replace(p.from);
+      });
+    } else if (p.step === 'verify' && currentHref() === p.from) {
+      watchRender(p.from, () => setBroken(p.kind, false));
     }
   }
   function onNavigate(prevHref, fromPop = false) {
@@ -150,9 +214,13 @@
 
   // 初回ロード: X の起動前に replaceState だけすると「このページは存在しません」になるため、
   // まだ描画されていなければ本物のリダイレクト（体感ほぼゼロ）、描画済みなら popstate 方式。
+  resumePendingWatch();
   const initial = computeRedirect(currentHref(), null);
   if (initial) {
     if (document.querySelector('main')) applyRedirect(initial);
-    else location.replace(initial);
+    else {
+      store.set(sessionStorage, PENDING_KEY, { step: 'watch', from: currentHref(), to: initial.href, kind: initial.kind, t: Date.now() });
+      location.replace(initial.href);
+    }
   }
 })();

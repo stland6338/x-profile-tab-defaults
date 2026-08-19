@@ -19,13 +19,23 @@ mkdirSync(outDir, { recursive: true });
 
 function findChrome() {
   if (process.env.CHROME_BIN) return process.env.CHROME_BIN;
-  const cache = join(homedir(), 'Library/Caches/ms-playwright');
-  const dirs = readdirSync(cache).filter((d) => /^chromium-\d+$/.test(d)).sort().reverse();
-  for (const d of dirs) {
-    const bin = join(cache, d, 'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing');
-    if (existsSync(bin)) return bin;
+  // Playwright の Chromium（macOS: ~/Library/Caches/ms-playwright, Linux: ~/.cache/ms-playwright）
+  const caches = [join(homedir(), 'Library/Caches/ms-playwright'), join(homedir(), '.cache/ms-playwright')];
+  const candidates = [
+    'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+    'chrome-mac/Chromium.app/Contents/MacOS/Chromium',
+    'chrome-linux64/chrome',
+    'chrome-linux/chrome',
+  ];
+  for (const cache of caches) {
+    if (!existsSync(cache)) continue;
+    const dirs = readdirSync(cache).filter((d) => /^chromium-\d+$/.test(d)).sort().reverse();
+    for (const d of dirs) for (const c of candidates) {
+      const bin = join(cache, d, c);
+      if (existsSync(bin)) return bin;
+    }
   }
-  throw new Error('Chromium not found; set CHROME_BIN');
+  throw new Error('Chromium not found; run `npx playwright install chromium` or set CHROME_BIN');
 }
 
 const port = 9333;
@@ -64,11 +74,12 @@ function collectExtError(msg, extId) {
 function location_of(d) { return `${d.url || ''}:${d.lineNumber ?? ''}`; }
 
 class CDP {
-  constructor(ws) { this.ws = ws; this.id = 0; this.pending = new Map(); this.extId = null; ws.onmessage = (m) => this.onMessage(JSON.parse(m.data)); }
+  constructor(ws) { this.ws = ws; this.id = 0; this.pending = new Map(); this.handlers = new Map(); this.extId = null; ws.onmessage = (m) => this.onMessage(JSON.parse(m.data)); }
   static async connect(url) { const ws = new WebSocket(url); await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; }); return new CDP(ws); }
+  on(method, fn) { this.handlers.set(method, fn); }
   onMessage(msg) {
     if (msg.id && this.pending.has(msg.id)) { const { res, rej } = this.pending.get(msg.id); this.pending.delete(msg.id); msg.error ? rej(new Error(msg.error.message)) : res(msg.result); return; }
-    if (msg.method) collectExtError(msg, this.extId);
+    if (msg.method) { collectExtError(msg, this.extId); this.handlers.get(msg.method)?.(msg.params); }
   }
   send(method, params = {}) { const id = ++this.id; this.ws.send(JSON.stringify({ id, method, params })); return new Promise((res, rej) => this.pending.set(id, { res, rej })); }
   async eval(expr) { const r = await this.send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.text + ' ' + JSON.stringify(r.exceptionDetails.exception?.description)); return r.result.value; }
@@ -119,6 +130,30 @@ async function newTab(url) {
 }
 let currentExtId = null;
 
+// 「偽 X」: x.com への応答を CDP の Fetch で差し替える最小 SPA。
+// フェイルセーフの検証は本物の X に依存すると安定しない（ログアウト時、不明な URL をログイン画面へ飛ばすことがある）ので、
+// 「プロフィール URL ならタブを描画、それ以外は data-testid=error-detail を描画」だけを再現した固定ページで行う。
+const FAKE_X_HTML = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>fake x</title></head><body><main id="m"></main>
+<script>
+function render() {
+  var p = location.pathname, m = document.getElementById('m');
+  var mm = p.match(/^\\/([A-Za-z0-9_]{1,15})(?:\\/(all|with_replies|highlights|media))?$/);
+  if (mm) m.innerHTML = '<div role="tablist"><div role="tab" aria-selected="' + (mm[2] === 'all') + '">すべて</div><div role="tab" aria-selected="' + (!mm[2]) + '">ポスト</div></div>';
+  else m.innerHTML = '<div data-testid="error-detail">このページは存在しません。</div>';
+}
+window.addEventListener('popstate', function () { setTimeout(render, 300); });
+setTimeout(render, 500);
+</script></body></html>`;
+async function serveFakeX(cdp) {
+  await cdp.send('Fetch.enable', { patterns: [{ urlPattern: 'https://x.com/*', requestStage: 'Request' }] });
+  cdp.on('Fetch.requestPaused', (p) => cdp.send('Fetch.fulfillRequest', {
+    requestId: p.requestId, responseCode: 200,
+    responseHeaders: [{ name: 'Content-Type', value: 'text/html; charset=utf-8' }],
+    body: Buffer.from(FAKE_X_HTML).toString('base64'),
+  }).catch(() => {}));
+}
+const readBroken = (cdp) => cdp.eval(`(() => { try { return JSON.parse(localStorage.getItem('xtd:broken') || 'null'); } catch (e) { return null; } })()`);
+
 const results = [];
 function record(name, ok, detail) { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'} ${name} ${detail ?? ''}`); }
 function skip(name, detail) { console.log(`SKIP ${name} ${detail ?? ''}`); }
@@ -137,10 +172,61 @@ try {
   currentExtId = extId;
   record('extension loaded (service worker found)', !!extId, extId);
 
+  // 0) フェイルセーフ（偽 X で決定的に検証。本物 X を訪れる前に行い、X の service worker の影響を受けないようにする）
+  if (extId) {
+    const opt0 = await newTab(`chrome-extension://${extId}/options.html`);
+    await sleep(500);
+    await opt0.eval(`new Promise(r => chrome.storage.sync.set({ mode: 'fixed', postsTab: '__xtd_bogus__' }, r))`);
+    const fx = await newTab('about:blank');
+    await serveFakeX(fx);
+    //    初回ロード（location.replace 経路）: /user → /user/__xtd_bogus__ → エラー → /user に戻り、posts の書き換えが止まる
+    await navigate(fx, 'https://x.com/nijisanji_app');
+    await sleep(4000);
+    let s0 = await fx.eval(STATE);
+    let broken = await readBroken(fx);
+    record('fail-safe (hard): broken target reverts to /user', s0.loc === '/nijisanji_app' && s0.tabs > 0, JSON.stringify(s0));
+    record('fail-safe (hard): posts redirects paused (localStorage xtd:broken)', !!(broken && typeof broken.posts === 'number' && broken.posts > Date.now()), JSON.stringify(broken));
+    //    止まっている間は SPA 遷移でも書き換えない
+    await spaGo(fx, '/nijisanji_app/with_replies');
+    await spaGo(fx, '/nijisanji_app');
+    s0 = await fx.eval(STATE);
+    record('fail-safe: while paused, /user stays untouched', s0.loc === '/nijisanji_app', JSON.stringify(s0));
+    //    SPA 経路: 停止を解除して同じ状況を作る → 元に戻り、再び止まる
+    await fx.eval(`(() => { localStorage.removeItem('xtd:broken'); return true; })()`);
+    await spaGo(fx, '/nijisanji_app/with_replies');
+    await spaGo(fx, '/nijisanji_app');
+    await sleep(2000);
+    s0 = await fx.eval(STATE);
+    broken = await readBroken(fx);
+    record('fail-safe (SPA): broken target reverts to /user and pauses', s0.loc === '/nijisanji_app' && s0.tabs > 0 && !!(broken && broken.posts), JSON.stringify({ ...s0, broken }));
+    //    復帰: 設定を正常に戻し、停止フラグを消せば再び動く
+    await opt0.eval(`new Promise(r => chrome.storage.sync.set({ mode: 'fixed', postsTab: 'all' }, r))`);
+    await fx.eval(`(() => { localStorage.removeItem('xtd:broken'); return true; })()`);
+    await spaGo(fx, '/nijisanji_app/with_replies');
+    await spaGo(fx, '/nijisanji_app');
+    s0 = await fx.eval(STATE);
+    record('fail-safe: recovers after flag cleared (/user → /user/all)', s0.loc === '/nijisanji_app/all' && s0.sel.includes('すべて'), JSON.stringify(s0));
+    //    フェイルセーフは console.warn で知らせる（期待どおりなので、エラー集計からは除く）
+    const warns = extErrors.filter((e) => e.kind === 'warning' && e.text.includes("page doesn't exist"));
+    record('fail-safe: emits console.warn (hard + SPA)', warns.length === 2, `${warns.length} warning(s)`);
+    for (const w of warns) extErrors.splice(extErrors.indexOf(w), 1);
+    await fx.shot('e2e-0-failsafe.png');
+    await fx.send('Fetch.disable').catch(() => {});
+    fx.close();
+    opt0.close();
+  }
+
   // 1) 初回ロード: /{user} → /{user}/all（描画前なので location.replace）
   let cdp = await newTab('about:blank');
   await navigate(cdp, 'https://x.com/nijisanji_app');
   let s = await waitForTabs(cdp);
+  if (s.tabs === 0 && !s.loc.startsWith('/nijisanji_app')) {
+    // X がプロフィールを出してくれない（ログイン壁・データセンター IP のブロック等）。拡張の不具合ではないので中立終了
+    await cdp.shot('e2e-0-unreachable.png');
+    console.log(`UNREACHABLE X did not render the profile (loc=${s.loc}); nothing to test`);
+    chrome.kill('SIGKILL');
+    process.exit(2);
+  }
   record('initial load /user → /user/all', expectTab(s, '/nijisanji_app/all', 'すべて'), JSON.stringify(s));
   await cdp.shot('e2e-1-all.png');
 
@@ -229,6 +315,7 @@ try {
     await opt3.eval(`new Promise(r => chrome.storage.sync.set({ mode: 'fixed', postsTab: 'all' }, r))`);
     opt3.close();
     cdp.close();
+
   }
 } catch (e) {
   console.error('ERROR', e);

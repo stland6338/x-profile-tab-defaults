@@ -72,3 +72,10 @@ node scripts/build-zip.mjs
 ## 6. 更新時
 
 - `manifest.json` と `userscript/*.user.js` の `version` を上げる → `CHANGELOG.md` に追記 → zip を作り直してアップロード
+
+## 1.0.1（2026-08-19）— フェイルセーフ追加
+
+1. `node scripts/build-zip.mjs` → `dist/photos-first-for-x-1.0.1-chrome.zip`
+2. https://chrome.google.com/webstore/devconsole → アイテム → 「パッケージ」→ 新しいパッケージをアップロード → 「審査のために送信」
+3. 承認されたら site/README は変更不要（URL は同じ）。ユーザースクリプト版は GitHub の raw で配布しているので push だけで更新される
+

@@ -63,13 +63,19 @@ X の Web 版は表示するタブが URL で決まります。`page.js`（MAIN 
 
 初回のフルロード（URL 直打ち・リロード）だけは例外で、X の起動前に `replaceState` で URL を差し替えると X が「このページは存在しません」を出す（初期ルートをサーバー埋め込み情報から決めているらしい）ため、まだ何も描画されていない `document_start` の時点で `location.replace()` による本物のリダイレクトを行います。描画前なので体感コストはほぼありません。
 
+### フェイルセーフ（X の仕様変更に備えて）
+
+書き換え先を X が「このページは存在しません」と返した場合（URL 仕様が変わった・予約パスを見落とした等）、元の URL に戻してその種類（ポスト／メディア）の書き換えを 30 分止めます（x.com の `localStorage` にフラグ `xtd:broken` を保存。全タブで共有）。元の URL でも同じエラーなら拡張のせいではないと判断して解除します。つまり X が変わっても、この拡張は「害を出す」のではなく「何もしなくなる」方向に倒れます。発生時はコンソールに `[x-tab-defaults] X reported "page doesn't exist" ...` と警告が出るので、見かけたら [Issues](https://github.com/stland6338/x-profile-tab-defaults/issues) へお知らせください。
+
 ## テスト
 
 ```bash
 node scripts/e2e-headless.mjs   # 拡張を読み込んだ headless Chromium で初回ロード / SPA 遷移 / 予約パス / 設定画面 / 拡張由来のコンソールエラーを確認
 ```
 
-ログアウト状態の x.com を使うため、X 側の都合（ログイン誘導・旧 UI の A/B 配信）で一部 SKIP になることがあります。ログイン状態の挙動は実ブラウザで確認してください（[docs/publish-checklist.md](docs/publish-checklist.md) の手順 0）。
+ログアウト状態の x.com を使うため、X 側の都合（ログイン誘導・旧 UI の A/B 配信）で一部 SKIP になることがあります。ログイン状態の挙動は実ブラウザで確認してください（[docs/publish-checklist.md](docs/publish-checklist.md) の手順 0）。フェイルセーフの検証は、CDP で x.com の応答を差し替えた「偽 X」に対して決定的に行います。
+
+毎週月曜に GitHub Actions（[`weekly-e2e`](.github/workflows/e2e-weekly.yml)）が本物の x.com に対して同じ E2E を回し、壊れていたら `e2e-failure` ラベルの Issue を自動で立てます。X に到達できない週は警告のみです。
 
 ```
 manifest.json
