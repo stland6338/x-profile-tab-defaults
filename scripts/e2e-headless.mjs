@@ -164,13 +164,30 @@ function expectTab(s, path, tabText) {
 }
 
 try {
-  await waitForDevtools();
-  await sleep(1500);
-  const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
-  const sw = targets.find((x) => x.type === 'service_worker' && x.url.startsWith('chrome-extension://') && x.url.endsWith('/background.js'));
-  const extId = sw ? new URL(sw.url).host : null;
+  const ver = await waitForDevtools();
+  console.log(`chrome: ${ver.Browser} (${findChrome()})`);
+  // 拡張の ID を特定する。Chrome 151 以降は同じ unpacked 拡張が 2 つの ID で service worker を持つことがあり、
+  // 片方は options.html を開けない。候補ごとに options ページを開いて chrome.storage が使えるものを採用する。
+  let extId = null;
+  let candidates = [];
+  for (let i = 0; i < 20 && !extId; i++) {
+    await sleep(500);
+    const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
+    candidates = targets.filter((x) => x.type === 'service_worker' && /^chrome-extension:\/\/[a-p]{32}\/background\.js$/.test(x.url)).map((x) => new URL(x.url).host);
+    for (const id of candidates) {
+      const t = await newTab(`chrome-extension://${id}/options.html`);
+      await sleep(800);
+      const ok = await t.eval(`(() => typeof chrome !== 'undefined' && !!chrome.storage && document.title === 'Photos First for X')()`).catch(() => false);
+      t.close();
+      if (ok) { extId = id; break; }
+    }
+    if (!extId && i === 19) {
+      const targets2 = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
+      console.log('targets:', targets2.map((x) => `${x.type} ${x.url}`).join(' | '));
+    }
+  }
   currentExtId = extId;
-  record('extension loaded (service worker found)', !!extId, extId);
+  record('extension loaded (options page reachable)', !!extId, extId || `candidates=${JSON.stringify(candidates)}`);
 
   // 0) フェイルセーフ（偽 X で決定的に検証。本物 X を訪れる前に行い、X の service worker の影響を受けないようにする）
   if (extId) {
