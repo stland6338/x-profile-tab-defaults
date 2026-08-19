@@ -1,0 +1,7 @@
+{
+  "name": "photos-first-for-x-video",
+  "private": true,
+  "type": "module",
+  "description": "紹介動画（explainer.html）を Playwright で 1 フレームずつ描画して mp4/gif にする。npm i してから node render.mjs [--preview] [--gif]",
+  "devDependencies": { "playwright": "1.62.1" }
+}

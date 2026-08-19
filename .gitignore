@@ -3,3 +3,6 @@ dist/
 store-assets/build/
 node_modules/
 .claude/
+store-assets/video/frames/
+store-assets/video/*.png
+store-assets/video/node_modules

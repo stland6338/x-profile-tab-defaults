@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<style>
+/* 1280x720 の紹介動画。全アニメーションは Web Animations API で作り、render.mjs が currentTime をシークして 1 フレームずつ撮る */
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; }
+body {
+  background: radial-gradient(1100px 640px at 18% 0%, #0e7490 0%, #0b1220 55%, #05070d 100%);
+  color: #e7e9ea;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+.brand { position: absolute; left: 64px; top: 48px; display: flex; align-items: center; gap: 14px; }
+.brand img { width: 44px; height: 44px; border-radius: 10px; }
+.brand .name { font-size: 22px; font-weight: 700; color: #cfeff0; letter-spacing: .2px; }
+.brand .tag { margin-left: 10px; font-size: 13px; font-weight: 600; color: #7fb3c4; border: 1px solid #1f4a5a; padding: 3px 9px; border-radius: 999px; }
+.head { position: absolute; left: 64px; top: 116px; width: 1150px; }
+.head .h { position: absolute; left: 0; top: 0; margin: 0; font-size: 36px; white-space: nowrap; line-height: 1.3; font-weight: 800; letter-spacing: -.3px; opacity: 0; }
+.head .h em { font-style: normal; color: #5eead4; }
+.head .s { position: absolute; left: 0; top: 58px; margin: 0; font-size: 19px; color: #9fb3c8; opacity: 0; }
+
+/* X 風プロフィールのモック */
+.card { position: absolute; left: 260px; top: 232px; width: 760px; height: 420px; background: #000; border: 1px solid #2f3336; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,.5); }
+.card .topbar { height: 46px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid #16181c; }
+.card .topbar .dot { width: 10px; height: 10px; border-radius: 50%; background: #2f3336; }
+.card .topbar .url { margin-left: 8px; height: 26px; flex: 1; border-radius: 8px; background: #0f1419; color: #71767b; font-size: 13px; display: flex; align-items: center; padding: 0 12px; font-family: ui-monospace, Menlo, monospace; }
+.card .url b { color: #9fb3c8; font-weight: 600; }
+.card .url .p1, .card .url .p2, .card .url .p3, .card .url .p4 { position: absolute; }
+.card .prof { display: grid; grid-template-columns: 56px 1fr; gap: 14px; padding: 16px 18px 6px; align-items: center; }
+.card .avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0f766e, #334155); }
+.line { height: 10px; border-radius: 6px; background: #2f3336; }
+.line.w30 { width: 30%; } .line.w50 { width: 50%; } .line.w70 { width: 70%; } .line.w85 { width: 85%; }
+.tabs { position: relative; display: flex; height: 50px; border-bottom: 1px solid #2f3336; margin-top: 8px; }
+.tab { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; color: #71767b; font-size: 15px; font-weight: 500; }
+.tab .lbl { position: absolute; display: flex; align-items: center; white-space: nowrap; }
+.tab .chev { display: inline-block; width: 8px; height: 8px; margin-left: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-3px) rotate(45deg); }
+.tab.on { color: #e7e9ea; font-weight: 700; }
+.ul { position: absolute; bottom: 0; height: 4px; width: 56px; border-radius: 9999px; background: #1d9bf0; left: 0; transform: translateX(48px); }
+.glow { position: absolute; top: 4px; height: 42px; width: 152px; border-radius: 10px; box-shadow: 0 0 0 2px #5eead4, 0 0 24px 4px rgba(94,234,212,.45); opacity: 0; }
+.auto { position: absolute; top: -34px; padding: 4px 10px; border-radius: 999px; background: #5eead4; color: #042f2e; font-size: 13px; font-weight: 800; letter-spacing: .3px; opacity: 0; white-space: nowrap; }
+.auto::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #5eead4; }
+.content { position: relative; height: 240px; }
+.feed { position: absolute; inset: 0; padding: 14px 18px; display: grid; gap: 14px; align-content: start; }
+.post { display: grid; grid-template-columns: 40px 1fr; gap: 12px; }
+.post .av { width: 40px; height: 40px; border-radius: 50%; background: #2f3336; }
+.post .ln { display: grid; gap: 8px; padding-top: 4px; }
+.post.reply { padding-left: 52px; opacity: 0; }
+.post.reply .av { background: #263238; }
+.grid { position: absolute; inset: 0; padding: 6px; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 112px; gap: 4px; opacity: 0; }
+.cell { position: relative; border-radius: 4px; overflow: hidden; }
+.cell .v, .cell .ph { position: absolute; inset: 0; }
+.cell .v { background: linear-gradient(135deg, #1e293b, #334155); }
+.cell .v::after { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-40%, -50%); border-left: 18px solid rgba(255,255,255,.85); border-top: 11px solid transparent; border-bottom: 11px solid transparent; }
+.cell .v::before { content: "0:32"; position: absolute; right: 8px; bottom: 6px; font-size: 11px; color: #e7e9ea; background: rgba(0,0,0,.6); padding: 1px 5px; border-radius: 4px; }
+.cell .ph { background: linear-gradient(160deg, #0f766e 0%, #134e4a 45%, #1e293b 100%); opacity: 0; }
+.cell .ph::after { content: ""; position: absolute; left: 20%; top: 26%; width: 16px; height: 16px; border-radius: 50%; background: rgba(255,255,255,.85); }
+.cell .ph::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 45%; background: linear-gradient(to top, rgba(4,47,46,.85), transparent); }
+.cell:nth-child(2) .ph { background: linear-gradient(160deg, #7c3aed 0%, #312e81 60%, #1e293b 100%); }
+.cell:nth-child(3) .ph { background: linear-gradient(160deg, #f59e0b 0%, #7c2d12 60%, #1e293b 100%); }
+.cell:nth-child(5) .ph { background: linear-gradient(160deg, #db2777 0%, #4a044e 60%, #1e293b 100%); }
+.cell:nth-child(8) .ph { background: linear-gradient(160deg, #38bdf8 0%, #1e3a8a 60%, #1e293b 100%); }
+/* ドロップダウン */
+.menu { position: absolute; left: 24px; top: 4px; width: 200px; background: #000; border: 1px solid #2f3336; border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.7); overflow: hidden; opacity: 0; transform: translateY(-6px); }
+.menu .it { padding: 12px 16px; font-size: 15px; color: #e7e9ea; display: flex; justify-content: space-between; align-items: center; }
+.menu .it .ck { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #1d9bf0; position: relative; opacity: 0; }
+.menu .it .ck::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: #1d9bf0; }
+.menu .it.hover { background: #16181c; }
+.cursor { position: absolute; left: 0; top: 0; width: 22px; height: 30px; opacity: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+/* CTA */
+.cta { position: absolute; left: 0; right: 0; top: 232px; text-align: center; opacity: 0; }
+.cta .pill { display: inline-block; padding: 18px 34px; border-radius: 999px; background: #5eead4; color: #042f2e; font-size: 26px; font-weight: 800; letter-spacing: .2px; box-shadow: 0 16px 40px rgba(94,234,212,.25); }
+.cta .url { margin-top: 18px; font-size: 18px; color: #9fb3c8; font-family: ui-monospace, Menlo, monospace; }
+.cta .foot { margin-top: 44px; display: flex; justify-content: center; gap: 28px; font-size: 20px; color: #cfe3ee; }
+.cta .foot span::before { content: "✓ "; color: #5eead4; }
+.cta .small { margin-top: 26px; font-size: 14px; color: #71767b; }
+.fade { position: absolute; inset: 0; background: #05070d; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="brand" id="brand"><img src="../../icons/icon128.png" alt=""><span class="name">Photos First for X</span><span class="tag">Chrome 拡張機能 · 無料</span></div>
+
+<div class="head">
+  <h1 class="h" id="h1">プロフィールを開くたび<em>「動画」「ポスト」</em>に戻る、あの仕様。</h1>
+  <p class="s" id="s1">2026 年 7 月の改修から、メディア ▾／ポスト ▾ の選択は毎回リセット。固定する設定は X にありません。</p>
+  <h1 class="h" id="h2">メディア ▾ を、いつも<em>「画像」</em>から開きます</h1>
+  <p class="s" id="s2">プロフィールを開いた瞬間に自動で切り替え。動画に戻される「あの一手間」がなくなります。</p>
+  <h1 class="h" id="h3">ポスト ▾ は、いつも<em>「すべて」</em>から開きます</h1>
+  <p class="s" id="s3">返信を含む「すべて」がデフォルトに。もちろん「変更しない」にもできます。</p>
+  <h1 class="h" id="h4">自分で選び直したときは、<em>そのまま</em></h1>
+  <p class="s" id="s4">ドロップダウンで「ポスト」「動画」を選んだら上書きしません。「記憶」モードなら最後の選択を次回も使います。</p>
+  <h1 class="h" id="h5">リロードなし・設定不要・<em>データ収集なし</em></h1>
+  <p class="s" id="s5">x.com / twitter.com のプロフィールページ以外では動作しません。オープンソース（MIT）。</p>
+</div>
+
+<div class="card" id="card">
+  <div class="topbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <div class="url"><b>x.com</b>&nbsp;<span id="url">/username</span></div>
+  </div>
+  <div class="prof"><div class="avatar"></div><div style="display:grid;gap:9px"><div class="line w30"></div><div class="line w50"></div></div></div>
+  <div class="tabs">
+    <div class="tab on" id="tabPosts">
+      <span class="lbl" id="lPosts">ポスト<span class="chev"></span></span>
+      <span class="lbl" id="lAll" style="opacity:0">すべて<span class="chev"></span></span>
+    </div>
+    <div class="tab">返信</div>
+    <div class="tab">リポスト</div>
+    <div class="tab" id="tabMedia">
+      <span class="lbl" id="lMedia">メディア</span>
+      <span class="lbl" id="lVideo" style="opacity:0">動画<span class="chev"></span></span>
+      <span class="lbl" id="lPhoto" style="opacity:0">画像<span class="chev"></span></span>
+    </div>
+    <div class="tab">記事</div>
+    <div class="ul" id="ul"></div>
+    <div class="glow" id="glow"></div>
+    <div class="auto" id="auto">自動で切替</div>
+    <div class="auto" id="keep" style="background:#9fb3c8;color:#0b1220">そのまま</div>
+    <div class="auto" id="reset" style="background:#f87171;color:#450a0a">毎回リセット</div>
+  </div>
+  <div class="content">
+    <div class="feed" id="feed">
+      <div class="post"><div class="av"></div><div class="ln"><div class="line w30"></div><div class="line w85"></div><div class="line w70"></div></div></div>
+      <div class="post reply" id="rep1"><div class="av"></div><div class="ln"><div class="line w30"></div><div class="line w70"></div></div></div>
+      <div class="post"><div class="av"></div><div class="ln"><div class="line w30"></div><div class="line w85"></div><div class="line w50"></div></div></div>
+      <div class="post reply" id="rep2"><div class="av"></div><div class="ln"><div class="line w30"></div><div class="line w70"></div></div></div>
+    </div>
+    <div class="grid" id="grid">
+      <div class="cell"><div class="v"></div><div class="ph"></div></div><div class="cell"><div class="v"></div><div class="ph"></div></div>
+      <div class="cell"><div class="v"></div><div class="ph"></div></div><div class="cell"><div class="v"></div><div class="ph"></div></div>
+      <div class="cell"><div class="v"></div><div class="ph"></div></div><div class="cell"><div class="v"></div><div class="ph"></div></div>
+      <div class="cell"><div class="v"></div><div class="ph"></div></div><div class="cell"><div class="v"></div><div class="ph"></div></div>
+    </div>
+    <div class="menu" id="menu">
+      <div class="it" id="mAll">すべて<span class="ck" id="ckAll"></span></div>
+      <div class="it" id="mPosts">ポスト<span class="ck" id="ckPosts"></span></div>
+      <div class="it">ハイライト<span class="ck"></span></div>
+    </div>
+  </div>
+  <svg class="cursor" id="cursor" viewBox="0 0 22 30"><path d="M2 2 L2 24 L8 18 L12 28 L16 26 L12 17 L20 17 Z" fill="#fff" stroke="#000" stroke-width="1.5"/></svg>
+</div>
+
+<div class="cta" id="cta">
+  <div class="pill">Chrome ウェブストアで入手</div>
+  <div class="url">chromewebstore.google.com/detail/enkgkhmajfdojmdgfkmjnnegkhhigpli</div>
+  <div class="foot"><span>リロードなし</span><span>設定不要（変更も可）</span><span>データ収集なし</span><span>ユーザースクリプト版あり</span></div>
+  <div class="small">X Corp. とは無関係の非公式ツールです</div>
+</div>
+<div class="fade" id="fade"></div>
+
+<script>
+// ---- タイムライン（秒）----
+const T = 24;
+const S = { s1: 0.5, s2: 5.6, s3: 11.0, s4: 16.0, s5: 20.4, end: 24 };
+const anims = [];
+const $ = (id) => document.getElementById(id);
+const ease = 'cubic-bezier(.2,.7,.2,1)';
+// kf: [{t, ...props}] を offset に変換して animate。fill both / 一時停止
+function A(el, kf, opts = {}) {
+  const frames = kf.map(({ t, ...p }) => ({ offset: Math.max(0, Math.min(1, t / T)), easing: opts.easing || ease, ...p }));
+  const a = el.animate(frames, { duration: T * 1000, fill: 'both' });
+  a.pause(); anims.push(a); return a;
+}
+// 見出し・サブの入れ替え（フェード＋少し上へ）
+function headline(h, s, from, to) {
+  A(h, [{ t: 0, opacity: 0, transform: 'translateY(14px)' }, { t: from, opacity: 0, transform: 'translateY(14px)' }, { t: from + .5, opacity: 1, transform: 'translateY(0)' }, { t: to - .35, opacity: 1, transform: 'translateY(0)' }, { t: to, opacity: 0, transform: 'translateY(-10px)' }, { t: T, opacity: 0 }]);
+  A(s, [{ t: 0, opacity: 0, transform: 'translateY(10px)' }, { t: from + .25, opacity: 0, transform: 'translateY(10px)' }, { t: from + .8, opacity: 1, transform: 'translateY(0)' }, { t: to - .35, opacity: 1, transform: 'translateY(0)' }, { t: to, opacity: 0 }, { t: T, opacity: 0 }]);
+}
+headline($('h1'), $('s1'), S.s1, S.s2);
+headline($('h2'), $('s2'), S.s2, S.s3);
+headline($('h3'), $('s3'), S.s3, S.s4);
+headline($('h4'), $('s4'), S.s4, S.s5);
+headline($('h5'), $('s5'), S.s5, S.end);
+// ブランド・カードの登場、CTA、フェードアウト
+A($('brand'), [{ t: 0, opacity: 0, transform: 'translateY(-8px)' }, { t: .6, opacity: 1, transform: 'translateY(0)' }, { t: T, opacity: 1 }]);
+A($('card'), [{ t: 0, opacity: 0, transform: 'translateY(30px) scale(.98)' }, { t: .3, opacity: 0, transform: 'translateY(30px) scale(.98)' }, { t: 1.1, opacity: 1, transform: 'translateY(0) scale(1)' }, { t: S.s5 - .3, opacity: 1, transform: 'translateY(0) scale(1)' }, { t: S.s5 + .3, opacity: 0, transform: 'translateY(20px) scale(.97)' }, { t: T, opacity: 0 }]);
+A($('cta'), [{ t: 0, opacity: 0, transform: 'translateY(16px)' }, { t: S.s5 + .2, opacity: 0, transform: 'translateY(16px)' }, { t: S.s5 + .8, opacity: 1, transform: 'translateY(0)' }, { t: T, opacity: 1 }]);
+A($('fade'), [{ t: 0, opacity: 1 }, { t: .4, opacity: 0 }, { t: T - .6, opacity: 0 }, { t: T, opacity: 1 }], { easing: 'linear' });
+
+// ---- モックの状態遷移 ----
+// タブの下線位置（各タブ幅 = 760/5 = 152px, 下線幅 56 → 中央寄せ 48px）
+const ulX = (i) => `translateX(${i * 152 + 48}px)`;
+const glowX = (i) => `translateX(${i * 152}px)`;
+// URL 表示
+const url = $('url');
+const urlKF = [
+  [0, '/username'], [S.s2 + .2, '/username/media'], [S.s2 + 1.7, '/username/media?filter=photo'],
+  [S.s3 + .2, '/username'], [S.s3 + 1.7, '/username/all'], [S.s4 + 3.2, '/username'],
+];
+// シーン 2: メディアへ移動 → 動画 → 画像
+const t2 = S.s2;
+A($('ul'), [{ t: 0, transform: ulX(0) }, { t: t2 + .2, transform: ulX(0) }, { t: t2 + .5, transform: ulX(3) }, { t: S.s3 + .2, transform: ulX(3) }, { t: S.s3 + .5, transform: ulX(0) }, { t: T, transform: ulX(0) }]);
+A($('tabMedia'), [{ t: 0, color: '#71767b', fontWeight: 500 }, { t: t2 + .3, color: '#71767b', fontWeight: 500 }, { t: t2 + .5, color: '#e7e9ea', fontWeight: 700 }, { t: S.s3 + .2, color: '#e7e9ea', fontWeight: 700 }, { t: S.s3 + .5, color: '#71767b', fontWeight: 500 }, { t: T, color: '#71767b' }]);
+A($('tabPosts'), [{ t: 0, color: '#e7e9ea' }, { t: t2 + .3, color: '#e7e9ea' }, { t: t2 + .5, color: '#71767b' }, { t: S.s3 + .2, color: '#71767b' }, { t: S.s3 + .5, color: '#e7e9ea' }, { t: T, color: '#e7e9ea' }]);
+A($('lMedia'), [{ t: 0, opacity: 1 }, { t: t2 + .3, opacity: 1 }, { t: t2 + .5, opacity: 0 }, { t: S.s3 + .2, opacity: 0 }, { t: S.s3 + .5, opacity: 1 }, { t: T, opacity: 1 }]);
+A($('lVideo'), [{ t: 0, opacity: 0 }, { t: t2 + .3, opacity: 0 }, { t: t2 + .5, opacity: 1 }, { t: t2 + 1.6, opacity: 1 }, { t: t2 + 1.9, opacity: 0 }, { t: T, opacity: 0 }]);
+A($('lPhoto'), [{ t: 0, opacity: 0 }, { t: t2 + 1.6, opacity: 0 }, { t: t2 + 1.9, opacity: 1 }, { t: S.s3 + .2, opacity: 1 }, { t: S.s3 + .5, opacity: 0 }, { t: T, opacity: 0 }]);
+A($('feed'), [{ t: 0, opacity: 1 }, { t: t2 + .3, opacity: 1 }, { t: t2 + .6, opacity: 0 }, { t: S.s3 + .2, opacity: 0 }, { t: S.s3 + .5, opacity: 1 }, { t: T, opacity: 1 }]);
+A($('grid'), [{ t: 0, opacity: 0 }, { t: t2 + .3, opacity: 0 }, { t: t2 + .6, opacity: 1 }, { t: S.s3 + .2, opacity: 1 }, { t: S.s3 + .5, opacity: 0 }, { t: T, opacity: 0 }]);
+document.querySelectorAll('.cell .ph').forEach((ph, i) => A(ph, [{ t: 0, opacity: 0 }, { t: t2 + 1.7 + i * .06, opacity: 0 }, { t: t2 + 2.1 + i * .06, opacity: 1 }, { t: T, opacity: 1 }]));
+// グロー＋「自動で切替」バッジ（メディア→画像、ポスト→すべて）
+A($('glow'), [{ t: 0, opacity: 0, transform: glowX(3) }, { t: t2 + 1.5, opacity: 0, transform: glowX(3) }, { t: t2 + 1.8, opacity: 1, transform: glowX(3) }, { t: t2 + 3.6, opacity: 1, transform: glowX(3) }, { t: t2 + 4.1, opacity: 0, transform: glowX(3) },
+  { t: S.s3 + 1.5, opacity: 0, transform: glowX(0) }, { t: S.s3 + 1.8, opacity: 1, transform: glowX(0) }, { t: S.s3 + 3.6, opacity: 1, transform: glowX(0) }, { t: S.s3 + 4.1, opacity: 0, transform: glowX(0) }, { t: T, opacity: 0 }]);
+A($('auto'), [{ t: 0, opacity: 0, transform: `translate(${3 * 152 + 30}px, 6px)` }, { t: t2 + 1.7, opacity: 0, transform: `translate(${3 * 152 + 30}px, 6px)` }, { t: t2 + 2.0, opacity: 1, transform: `translate(${3 * 152 + 30}px, 0)` }, { t: t2 + 3.6, opacity: 1, transform: `translate(${3 * 152 + 30}px, 0)` }, { t: t2 + 4.0, opacity: 0, transform: `translate(${3 * 152 + 30}px, -4px)` },
+  { t: S.s3 + 1.7, opacity: 0, transform: 'translate(30px, 6px)' }, { t: S.s3 + 2.0, opacity: 1, transform: 'translate(30px, 0)' }, { t: S.s3 + 3.6, opacity: 1, transform: 'translate(30px, 0)' }, { t: S.s3 + 4.0, opacity: 0, transform: 'translate(30px, -4px)' }, { t: T, opacity: 0 }]);
+// シーン 1: 「すべて」を選んでいたのに、開き直すと「ポスト」に戻る（毎回リセット）
+A($('reset'), [{ t: 0, opacity: 0, transform: 'translate(30px, 6px)' }, { t: 2.9, opacity: 0, transform: 'translate(30px, 6px)' }, { t: 3.2, opacity: 1, transform: 'translate(30px, 0)' }, { t: S.s2 - .6, opacity: 1, transform: 'translate(30px, 0)' }, { t: S.s2 - .3, opacity: 0, transform: 'translate(30px, -4px)' }, { t: T, opacity: 0 }]);
+// シーン 3: ポスト → すべて（返信も混ざる）
+const t3 = S.s3;
+A($('lPosts'), [{ t: 0, opacity: 1 }, { t: 1.2, opacity: 1 }, { t: 1.4, opacity: 0 }, { t: 2.8, opacity: 0 }, { t: 2.9, opacity: 1 }, { t: t3 + 1.6, opacity: 1 }, { t: t3 + 1.9, opacity: 0 }, { t: S.s4 + 3.0, opacity: 0 }, { t: S.s4 + 3.3, opacity: 1 }, { t: T, opacity: 1 }]);
+A($('lAll'), [{ t: 0, opacity: 0 }, { t: 1.2, opacity: 0 }, { t: 1.4, opacity: 1 }, { t: 2.8, opacity: 1 }, { t: 2.9, opacity: 0 }, { t: t3 + 1.6, opacity: 0 }, { t: t3 + 1.9, opacity: 1 }, { t: S.s4 + 3.0, opacity: 1 }, { t: S.s4 + 3.3, opacity: 0 }, { t: T, opacity: 0 }]);
+// URL も同期: /username/all → 開き直して /username
+urlKF.push([1.4, '/username/all'], [2.85, '/username']);
+urlKF.sort((a, b) => a[0] - b[0]);
+[$('rep1'), $('rep2')].forEach((r, i) => A(r, [{ t: 0, opacity: 0, transform: 'translateY(6px)' }, { t: t3 + 1.9 + i * .15, opacity: 0, transform: 'translateY(6px)' }, { t: t3 + 2.3 + i * .15, opacity: 1, transform: 'translateY(0)' }, { t: S.s4 + 3.0, opacity: 1 }, { t: S.s4 + 3.3, opacity: 0 }, { t: T, opacity: 0 }]));
+// シーン 4: ドロップダウンで「ポスト」を選ぶ → そのまま
+const t4 = S.s4;
+const cur = (x, y) => `translate(${x}px, ${y}px)`;
+A($('cursor'), [{ t: 0, opacity: 0, transform: cur(420, 300) }, { t: t4 + .3, opacity: 0, transform: cur(420, 300) }, { t: t4 + .6, opacity: 1, transform: cur(380, 260) }, { t: t4 + 1.3, opacity: 1, transform: cur(96, 150) },
+  { t: t4 + 1.6, opacity: 1, transform: cur(96, 150) }, { t: t4 + 2.4, opacity: 1, transform: cur(110, 254) }, { t: t4 + 2.9, opacity: 1, transform: cur(110, 254) }, { t: t4 + 3.6, opacity: 1, transform: cur(180, 300) }, { t: t4 + 4.0, opacity: 0, transform: cur(200, 320) }, { t: T, opacity: 0 }]);
+A($('menu'), [{ t: 0, opacity: 0, transform: 'translateY(-6px)' }, { t: t4 + 1.5, opacity: 0, transform: 'translateY(-6px)' }, { t: t4 + 1.75, opacity: 1, transform: 'translateY(0)' }, { t: t4 + 3.0, opacity: 1, transform: 'translateY(0)' }, { t: t4 + 3.25, opacity: 0, transform: 'translateY(-4px)' }, { t: T, opacity: 0 }]);
+A($('ckAll'), [{ t: 0, opacity: 0 }, { t: t4 + 1.5, opacity: 1 }, { t: t4 + 2.9, opacity: 1 }, { t: t4 + 3.0, opacity: 0 }, { t: T, opacity: 0 }]);
+A($('ckPosts'), [{ t: 0, opacity: 0 }, { t: t4 + 2.95, opacity: 0 }, { t: t4 + 3.0, opacity: 1 }, { t: T, opacity: 1 }]);
+A($('mPosts'), [{ t: 0, backgroundColor: 'rgba(22,24,28,0)' }, { t: t4 + 2.4, backgroundColor: 'rgba(22,24,28,0)' }, { t: t4 + 2.6, backgroundColor: 'rgba(22,24,28,1)' }, { t: T, backgroundColor: 'rgba(22,24,28,1)' }]);
+A($('keep'), [{ t: 0, opacity: 0, transform: 'translate(30px, 6px)' }, { t: t4 + 3.3, opacity: 0, transform: 'translate(30px, 6px)' }, { t: t4 + 3.6, opacity: 1, transform: 'translate(30px, 0)' }, { t: S.s5 - .4, opacity: 1, transform: 'translate(30px, 0)' }, { t: S.s5, opacity: 0 }, { t: T, opacity: 0 }]);
+// URL 文字列は JS で切替（seek 時に評価）
+function setUrl(t) { let v = urlKF[0][1]; for (const [k, s] of urlKF) if (t >= k) v = s; url.textContent = v; }
+window.__seek = (t) => { for (const a of anims) a.currentTime = t * 1000; setUrl(t); };
+window.__seek(0);
+</script>
+</body>
+</html>
