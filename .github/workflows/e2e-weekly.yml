@@ -1,0 +1,57 @@
+# 週 1 回、本物の x.com に対して E2E を回し、壊れていたら Issue を立てる（見張り役）。
+# X 側の都合で到達できない（ログイン壁・ブロック）場合は exit 2 → 警告のみで失敗にはしない。
+name: weekly-e2e
+on:
+  schedule:
+    - cron: '0 0 * * 1' # 毎週月曜 09:00 JST
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium (Playwright)
+        run: npx --yes playwright@1 install --with-deps chromium
+      - name: Run E2E against live x.com
+        run: |
+          set +e
+          node scripts/e2e-headless.mjs 2>&1 | tee e2e.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" = "2" ]; then
+            echo "::warning::X did not render a profile from CI (login wall / blocked). Nothing verified this week."
+            exit 0
+          fi
+          exit "$code"
+      - name: Upload screenshots and log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ github.run_id }}
+          path: |
+            store-assets/build/*.png
+            e2e.log
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Open or update issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh label create e2e-failure --color d73a4a --description "Weekly E2E against x.com failed" 2>/dev/null || true
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          summary=$(grep -E '^(FAIL|SKIP|ERROR|UNREACHABLE)|passed$' e2e.log | head -40)
+          body=$(printf 'Weekly E2E against live x.com failed — X may have changed its profile URLs.\n\nRun: %s\n\n```\n%s\n```\n\nNext: check `computeRedirect()` / `RESERVED` in `page.js`, bump the version, `node scripts/build-zip.mjs`, and upload to the Chrome Web Store (see docs/publish-checklist.md).' "$run_url" "$summary")
+          existing=$(gh issue list --label e2e-failure --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "E2E failed: X may have changed profile URLs" --body "$body" --label e2e-failure
+          fi
