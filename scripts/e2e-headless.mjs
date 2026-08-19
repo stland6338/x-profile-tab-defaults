@@ -157,10 +157,11 @@ const readBroken = (cdp) => cdp.eval(`(() => { try { return JSON.parse(localStor
 const results = [];
 function record(name, ok, detail) { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'} ${name} ${detail ?? ''}`); }
 function skip(name, detail) { console.log(`SKIP ${name} ${detail ?? ''}`); }
-// 旧 UI が配信された場合は URL だけ検証する
-function expectTab(s, path, tabText) {
+// 旧 UI が配信された場合は URL だけ検証する。タブ名は X が IP で言語を決めるので ja/en の両方を受け付ける
+const TAB_LABELS = { all: ['すべて', 'All'], photo: ['画像', 'Photos'] };
+function expectTab(s, path, key) {
   if (s.loc !== path) return false;
-  return s.redesign ? s.sel.includes(tabText) : true;
+  return s.redesign ? TAB_LABELS[key].some((t) => s.sel.includes(t)) : true;
 }
 
 try {
@@ -244,7 +245,7 @@ try {
     chrome.kill('SIGKILL');
     process.exit(2);
   }
-  record('initial load /user → /user/all', expectTab(s, '/nijisanji_app/all', 'すべて'), JSON.stringify(s));
+  record('initial load /user → /user/all', expectTab(s, '/nijisanji_app/all', 'all'), JSON.stringify(s));
   await cdp.shot('e2e-1-all.png');
 
   // 2) SPA 遷移（X のルーターと同じく pushState → popstate）
@@ -252,7 +253,7 @@ try {
   await spaGo(cdp, '/nijisanji_app/with_replies');
   await spaGo(cdp, '/nijisanji_app');
   s = await waitForTabs(cdp);
-  record('SPA /with_replies → /user → /user/all', expectTab(s, '/nijisanji_app/all', 'すべて'), JSON.stringify(s));
+  record('SPA /with_replies → /user → /user/all', expectTab(s, '/nijisanji_app/all', 'all'), JSON.stringify(s));
 
   //    /all → /{user} は「ドロップダウンでポストを選んだ」相当 → そのまま
   await spaGo(cdp, '/nijisanji_app');
@@ -262,7 +263,7 @@ try {
   //    /media → ?filter=photo（ログアウトだとログインへ飛ばされるので、その場合は SKIP）
   await spaGo(cdp, '/nijisanji_app/media');
   s = await cdp.eval(STATE);
-  if (s.loc.startsWith('/nijisanji_app/media')) record('SPA /media → /media?filter=photo', expectTab(s, '/nijisanji_app/media?filter=photo', '画像'), JSON.stringify(s));
+  if (s.loc.startsWith('/nijisanji_app/media')) record('SPA /media → /media?filter=photo', expectTab(s, '/nijisanji_app/media?filter=photo', 'photo'), JSON.stringify(s));
   else skip('SPA /media → ?filter=photo', `(X redirected while logged out: ${s.loc})`);
   await cdp.shot('e2e-2-photo.png');
 
