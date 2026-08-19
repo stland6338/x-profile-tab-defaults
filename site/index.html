@@ -52,8 +52,15 @@
     </table>
   </div>
 
+  <h2>インストール時に表示される許可について</h2>
+  <div class="card">
+    <p>インストール時に「x.com と twitter.com のすべてのデータの読み取りと変更」という確認が表示されます。これは X のページ上でタブを切り替える処理を動かすために Chrome が必ず求める標準的な許可で、この拡張はプロフィールページで表示するタブを切り替える以外のことは何もしません。投稿・DM・フォロワー・アカウント情報などを読み取ったり、どこかへ送信したりすることは一切ありません。ソースコードは <a href="https://github.com/stland6338/x-profile-tab-defaults">GitHub</a> で全文公開しています。</p>
+    <p>X 側の仕様変更で切り替え先が無効になった場合は、自動で元の表示に戻してしばらく動作を止めます（画面が壊れたままにはなりません）。</p>
+  </div>
+
   <h2>English</h2>
   <p>Fixes X's new profile tabs: opens Media on <strong>Photos</strong> (not Videos) and Posts on <strong>All</strong> — automatically, without reloading. Options let you turn either rule off or switch to "Remember" mode. No data collection, no network requests, open source (MIT).</p>
+  <p>On install, Chrome asks to allow "read and change all your data on x.com and twitter.com". That is the standard permission for any extension that acts on a page; this one only switches tabs on profile pages and never reads or sends your posts, DMs or account details.</p>
 
   <footer>
     <a href="privacy.html">Privacy Policy / プライバシーポリシー</a> · MIT License · 非公式ツールです（X Corp. とは無関係）
