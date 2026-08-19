@@ -84,19 +84,23 @@ page.js          URL 監視と書き換え（MAIN world, document_start）
 background.js    ツールバーアイコン → 設定画面
 options.*        設定画面
 _locales/        ja / en
-userscript/      Tampermonkey 版（単体・設定はファイル内）
+userscript/      Tampermonkey 版（単体・設定はファイル内。共通ロジックは page.js から生成）
 store-assets/    ストア用画像の生成（node store-assets/build.mjs）
 docs/            掲載情報・公開手順
-scripts/build-zip.mjs     提出用 zip（Chrome/Edge 用 + Firefox 用）
-scripts/e2e-headless.mjs  headless Chromium での動作確認
-scripts/deploy-site.sh    site/（ランディング＋プライバシーポリシー）を Cloudflare Pages へ
+scripts/build-zip.mjs        提出用 zip（Chrome/Edge 用 + Firefox 用）。下 2 つのチェックを先に実行する
+scripts/sync-userscript.mjs  page.js の @shared ブロックを userscript に流し込む（--check で差分検出）
+scripts/check-version.mjs    manifest / userscript / CHANGELOG のバージョン一致を確認
+scripts/e2e-headless.mjs     headless Chromium での動作確認（本物の X + 偽 X）
+scripts/deploy-site.sh       site/（ランディング＋プライバシーポリシー）を Cloudflare Pages へ
 site/            https://photos-first-for-x.pages.dev/
 ```
 
 ## 注意 / 既知の制限
 
-- `/{name}` が全部プロフィールとは限らないため、`/home` `/explore` `/settings` などは `page.js` の `RESERVED` で除外しています。X が新しいトップレベルパスを追加して誤動作したら追加してください
-- X 側の URL 仕様（`/all`, `?filter=photo`）が変わると動かなくなります → `computeRedirect()` を修正
+- `/{name}` が全部プロフィールとは限らないため、`/home` `/explore` `/settings` などは `page.js` の `RESERVED` で除外しています。見落としがあってもフェイルセーフが元に戻しますが、気づいたら追加してください
+- X 側の URL 仕様（`/all`, `?filter=photo`）が変わると動かなくなります → `computeRedirect()` を修正 → `node scripts/sync-userscript.mjs` → version を上げて `node scripts/build-zip.mjs`
+- `page.js` を直したら必ず `node scripts/sync-userscript.mjs` を実行する（build-zip と CI が `--check` で止めます）
+- 役目を終えたときの手順は [docs/sunset.md](docs/sunset.md)
 - Chrome 111 以降（`world: "MAIN"` を使用）
 - 本拡張は X Corp. と無関係の非公式ツールです
 

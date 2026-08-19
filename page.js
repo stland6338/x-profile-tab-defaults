@@ -24,7 +24,11 @@
     debug: false,
   };
   let config = null;
+  const log = (...a) => config?.debug && console.log('[x-tab-defaults]', ...a);
 
+  // 以下 @shared の範囲は userscript/x-tab-defaults.user.js と同一（config → CONFIG のみ差し替え）。
+  // 変更したら `node scripts/sync-userscript.mjs` で同期する（build-zip / CI が --check で検証）。
+  // @shared-begin routing
   // /{name} が「プロフィール」ではない X の予約パス（小文字）
   const RESERVED = new Set([
     'home', 'explore', 'notifications', 'messages', 'chat', 'grok', 'i',
@@ -44,8 +48,6 @@
   // ここから /{user} へ遷移するのはドロップダウンで「ポスト」を選んだときだけ
   // （ハイライトは設定項目にはないが、ユーザーがドロップダウンで選ぶことはあるので含める）
   const POSTS_VARIANTS = ['all', 'highlights'];
-
-  const log = (...a) => config?.debug && console.log('[x-tab-defaults]', ...a);
 
   /**
    * 現在の URL から書き換え先を計算する。不要なら null。
@@ -116,8 +118,10 @@
     }
     return null;
   }
+  // @shared-end routing
 
   // ---- 履歴 API のフック ------------------------------------------------
+  // @shared-begin history
   const origPushState = history.pushState;
   const origReplaceState = history.replaceState;
   const currentHref = () => location.pathname + location.search;
@@ -218,6 +222,7 @@
       watchRender(p.from, () => setBroken(p.kind, false));
     }
   }
+  // @shared-end history
 
   /** 遷移後に呼ぶ。X 側の処理が終わってから書き換えるため 1 tick 遅らせる */
   function onNavigate(prevHref, fromPop = false) {
@@ -238,6 +243,7 @@
     }, 0);
   }
 
+  // @shared-begin hooks
   function wrap(fn) {
     return function (state, title, url) {
       const prev = currentHref();
@@ -260,6 +266,7 @@
     lastHref = now;
     if (!redirecting && now !== prev) onNavigate(prev, true);
   });
+  // @shared-end hooks
 
   // ---- 設定の受け取り -----------------------------------------------------
   let initialDone = false;

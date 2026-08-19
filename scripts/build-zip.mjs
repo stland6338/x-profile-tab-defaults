@@ -12,6 +12,12 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
 mkdirSync(dist, { recursive: true });
 
+// 事前チェック: userscript が page.js と同期しているか／バージョン表記が 3 か所で一致するか
+for (const script of ['sync-userscript.mjs --check', 'check-version.mjs']) {
+  const [file, ...args] = script.split(' ');
+  execFileSync(process.execPath, [join(root, 'scripts', file), ...args], { stdio: 'inherit' });
+}
+
 const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'));
 const version = manifest.version;
 const FILES = [
