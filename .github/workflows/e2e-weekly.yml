@@ -11,7 +11,7 @@ permissions:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -21,9 +21,16 @@ jobs:
         run: |
           node scripts/sync-userscript.mjs --check
           node scripts/check-version.mjs
+      # Playwright のバージョンは固定する（検証環境側の突然の変化で誤報が出るのを防ぐ）。上げるときはローカルで E2E を通してから。
+      # apt（Ubuntu ミラー）が落ちていてもジョブ全体が道連れにならないよう、システムライブラリは best-effort にし、
+      # Chromium 本体は Playwright の CDN から入れる（ubuntu-latest には必要なライブラリがほぼ入っている）
+      - name: Install system libraries for Chromium (best effort)
+        timeout-minutes: 5
+        continue-on-error: true
+        run: npx --yes playwright@1.62.1 install-deps chromium
       - name: Install Chromium (Playwright)
-        # バージョンは固定する（検証環境側の突然の変化で誤報が出るのを防ぐ）。上げるときはローカルで E2E を通してから
-        run: npx --yes playwright@1.62.1 install --with-deps chromium
+        timeout-minutes: 5
+        run: npx --yes playwright@1.62.1 install chromium
       - name: Run E2E against live x.com
         env:
           # ランナー既定の CHROME_BIN（ブランド版 Google Chrome）は 137 以降 --load-extension を無視するので、
