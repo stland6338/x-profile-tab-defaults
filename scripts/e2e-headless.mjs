@@ -198,32 +198,32 @@ try {
     const fx = await newTab('about:blank');
     await serveFakeX(fx);
     //    初回ロード（location.replace 経路）: /user → /user/__xtd_bogus__ → エラー → /user に戻り、posts の書き換えが止まる
-    await navigate(fx, 'https://x.com/nijisanji_app');
+    await navigate(fx, 'https://x.com/X');
     await sleep(4000);
     let s0 = await fx.eval(STATE);
     let broken = await readBroken(fx);
-    record('fail-safe (hard): broken target reverts to /user', s0.loc === '/nijisanji_app' && s0.tabs > 0, JSON.stringify(s0));
+    record('fail-safe (hard): broken target reverts to /user', s0.loc === '/X' && s0.tabs > 0, JSON.stringify(s0));
     record('fail-safe (hard): posts redirects paused (localStorage xtd:broken)', !!(broken && typeof broken.posts === 'number' && broken.posts > Date.now()), JSON.stringify(broken));
     //    止まっている間は SPA 遷移でも書き換えない
-    await spaGo(fx, '/nijisanji_app/with_replies');
-    await spaGo(fx, '/nijisanji_app');
+    await spaGo(fx, '/X/with_replies');
+    await spaGo(fx, '/X');
     s0 = await fx.eval(STATE);
-    record('fail-safe: while paused, /user stays untouched', s0.loc === '/nijisanji_app', JSON.stringify(s0));
+    record('fail-safe: while paused, /user stays untouched', s0.loc === '/X', JSON.stringify(s0));
     //    SPA 経路: 停止を解除して同じ状況を作る → 元に戻り、再び止まる
     await fx.eval(`(() => { localStorage.removeItem('xtd:broken'); return true; })()`);
-    await spaGo(fx, '/nijisanji_app/with_replies');
-    await spaGo(fx, '/nijisanji_app');
+    await spaGo(fx, '/X/with_replies');
+    await spaGo(fx, '/X');
     await sleep(2000);
     s0 = await fx.eval(STATE);
     broken = await readBroken(fx);
-    record('fail-safe (SPA): broken target reverts to /user and pauses', s0.loc === '/nijisanji_app' && s0.tabs > 0 && !!(broken && broken.posts), JSON.stringify({ ...s0, broken }));
+    record('fail-safe (SPA): broken target reverts to /user and pauses', s0.loc === '/X' && s0.tabs > 0 && !!(broken && broken.posts), JSON.stringify({ ...s0, broken }));
     //    復帰: 設定を正常に戻し、停止フラグを消せば再び動く
     await opt0.eval(`new Promise(r => chrome.storage.sync.set({ mode: 'fixed', postsTab: 'all' }, r))`);
     await fx.eval(`(() => { localStorage.removeItem('xtd:broken'); return true; })()`);
-    await spaGo(fx, '/nijisanji_app/with_replies');
-    await spaGo(fx, '/nijisanji_app');
+    await spaGo(fx, '/X/with_replies');
+    await spaGo(fx, '/X');
     s0 = await fx.eval(STATE);
-    record('fail-safe: recovers after flag cleared (/user → /user/all)', s0.loc === '/nijisanji_app/all' && s0.sel.includes('すべて'), JSON.stringify(s0));
+    record('fail-safe: recovers after flag cleared (/user → /user/all)', s0.loc === '/X/all' && s0.sel.includes('すべて'), JSON.stringify(s0));
     //    フェイルセーフは console.warn で知らせる（期待どおりなので、エラー集計からは除く）
     const warns = extErrors.filter((e) => e.kind === 'warning' && e.text.includes("page doesn't exist"));
     record('fail-safe: emits console.warn (hard + SPA)', warns.length === 2, `${warns.length} warning(s)`);
@@ -236,40 +236,40 @@ try {
 
   // 1) 初回ロード: /{user} → /{user}/all（描画前なので location.replace）
   let cdp = await newTab('about:blank');
-  await navigate(cdp, 'https://x.com/nijisanji_app');
+  await navigate(cdp, 'https://x.com/X');
   let s = await waitForTabs(cdp);
-  if (s.tabs === 0 && !s.loc.startsWith('/nijisanji_app')) {
+  if (s.tabs === 0 && !s.loc.startsWith('/X')) {
     // X がプロフィールを出してくれない（ログイン壁・データセンター IP のブロック等）。拡張の不具合ではないので中立終了
     await cdp.shot('e2e-0-unreachable.png');
     console.log(`UNREACHABLE X did not render the profile (loc=${s.loc}); nothing to test`);
     chrome.kill('SIGKILL');
     process.exit(2);
   }
-  record('initial load /user → /user/all', expectTab(s, '/nijisanji_app/all', 'all'), JSON.stringify(s));
+  record('initial load /user → /user/all', expectTab(s, '/X/all', 'all'), JSON.stringify(s));
   await cdp.shot('e2e-1-all.png');
 
   // 2) SPA 遷移（X のルーターと同じく pushState → popstate）
   //    /with_replies → /{user} は「タブをクリック」相当 → /all になるはず
-  await spaGo(cdp, '/nijisanji_app/with_replies');
-  await spaGo(cdp, '/nijisanji_app');
+  await spaGo(cdp, '/X/with_replies');
+  await spaGo(cdp, '/X');
   s = await waitForTabs(cdp);
-  record('SPA /with_replies → /user → /user/all', expectTab(s, '/nijisanji_app/all', 'all'), JSON.stringify(s));
+  record('SPA /with_replies → /user → /user/all', expectTab(s, '/X/all', 'all'), JSON.stringify(s));
 
   //    /all → /{user} は「ドロップダウンでポストを選んだ」相当 → そのまま
-  await spaGo(cdp, '/nijisanji_app');
+  await spaGo(cdp, '/X');
   s = await waitForTabs(cdp);
-  record('SPA /all → /user keeps Posts (respectManual)', s.loc === '/nijisanji_app', JSON.stringify(s));
+  record('SPA /all → /user keeps Posts (respectManual)', s.loc === '/X', JSON.stringify(s));
 
   //    /media → ?filter=photo（ログアウトだとログインへ飛ばされるので、その場合は SKIP）
-  await spaGo(cdp, '/nijisanji_app/media');
+  await spaGo(cdp, '/X/media');
   s = await cdp.eval(STATE);
-  if (s.loc.startsWith('/nijisanji_app/media')) record('SPA /media → /media?filter=photo', expectTab(s, '/nijisanji_app/media?filter=photo', 'photo'), JSON.stringify(s));
+  if (s.loc.startsWith('/X/media')) record('SPA /media → /media?filter=photo', expectTab(s, '/X/media?filter=photo', 'photo'), JSON.stringify(s));
   else skip('SPA /media → ?filter=photo', `(X redirected while logged out: ${s.loc})`);
   await cdp.shot('e2e-2-photo.png');
 
   // 3) 予約パスは触らない（ログアウト時は X がログイン等へ飛ばすことがあるので
   //    「/all が付かない」「filter=photo が付かない」ことだけを見る）
-  const RESERVED_PATHS = ['/home', '/explore', '/notifications', '/messages', '/i/bookmarks', '/search?q=test', '/settings', '/compose/post', '/i/lists', '/nijisanji_app/with_replies', '/nijisanji_app/status/1'];
+  const RESERVED_PATHS = ['/home', '/explore', '/notifications', '/messages', '/i/bookmarks', '/search?q=test', '/settings', '/compose/post', '/i/lists', '/X/with_replies', '/X/status/1'];
   const broken = [];
   for (const p of RESERVED_PATHS) {
     await navigate(cdp, 'https://x.com' + p);
@@ -302,9 +302,9 @@ try {
     opt.close();
 
     cdp = await newTab('about:blank');
-    await navigate(cdp, 'https://x.com/nijisanji_app');
+    await navigate(cdp, 'https://x.com/X');
     s = await waitForTabs(cdp);
-    record("setting postsTab='' leaves /user untouched", s.loc === '/nijisanji_app', JSON.stringify(s));
+    record("setting postsTab='' leaves /user untouched", s.loc === '/X', JSON.stringify(s));
     await cdp.shot('e2e-4-unchanged.png');
     cdp.close();
 
@@ -315,18 +315,18 @@ try {
     await opt2.eval(`new Promise(r => chrome.storage.sync.set({ mode: 'remember', postsTab: '' }, r))`);
     opt2.close();
     cdp = await newTab('about:blank');
-    await navigate(cdp, 'https://x.com/nijisanji_app');
+    await navigate(cdp, 'https://x.com/X');
     await waitForTabs(cdp);
-    await spaGo(cdp, '/nijisanji_app/all');            // ドロップダウンで「すべて」を選んだ相当
+    await spaGo(cdp, '/X/all');            // ドロップダウンで「すべて」を選んだ相当
     await sleep(800);
     const opt3 = await newTab(`chrome-extension://${extId}/options.html`);
     await sleep(500);
     let st = await opt3.eval(`new Promise(r => chrome.storage.sync.get(null, r))`);
     record("remember mode: picking All stores postsTab='all'", st.postsTab === 'all', JSON.stringify(st));
-    await navigate(cdp, 'https://x.com/H_KAGAMI2434');  // 別プロフィール → 記憶した 'all' で開く
+    await navigate(cdp, 'https://x.com/Support');  // 別プロフィール → 記憶した 'all' で開く
     s = await waitForTabs(cdp);
-    record('remember mode: next profile opens /all', s.loc === '/H_KAGAMI2434/all', JSON.stringify(s));
-    await spaGo(cdp, '/H_KAGAMI2434');                  // 「ポスト」を選んだ相当 → '' を記憶
+    record('remember mode: next profile opens /all', s.loc === '/Support/all', JSON.stringify(s));
+    await spaGo(cdp, '/Support');                  // 「ポスト」を選んだ相当 → '' を記憶
     await sleep(800);
     st = await opt3.eval(`new Promise(r => chrome.storage.sync.get(null, r))`);
     record("remember mode: picking Posts stores postsTab=''", st.postsTab === '', JSON.stringify(st));
